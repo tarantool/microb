@@ -3,14 +3,13 @@
 --
 
 box.cfg {
-
 }
 
 --local os = require('os')
 
 local bench_name = 'microb'
 local metrics_number = 2
-local N = 100
+local N = 10000
 
 local ffi = require('ffi')
 ffi.cdef[[
@@ -36,19 +35,9 @@ local function run ()
         s:insert({ i })
     end
     local time_diff = time_now() - start_time
-    print (time_diff)
     s:drop()
-    return { bench_name = bench_name,
-             metrics_number = metrics_number,
-             metric_name1 = 'microb_num_req',
-             metric_unit2 = '',
-             metric_val1 = N,
-             metric_name2 = 'microb_time',
-             metric_unit2 = 'milisec',
-             metric_val2 = time_diff,
-             data =  os.time()
-            }
-
+    metric = {key = bench_name..'.insert', description = 'box.insert bench', unit = 'units/milisec', size = N/time_diff, time = time_diff}
+    return metric
 end
 
 res = run()
@@ -57,4 +46,4 @@ for k,v in pairs(res) do
     print(k, v)
 end
 
-
+os.exit()
