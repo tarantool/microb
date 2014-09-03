@@ -7,7 +7,7 @@ box.cfg {
 
 --print(package.path)
 
-local microb = require('benchmarks/microb')
+local microb = require('benchmarks.microb')
 
 res = microb.run()
 

@@ -12,6 +12,6 @@ box.cfg {
 
 require('console').listen('127.0.0.1:33113')
 
-storage = require('storage')
+storage = require('microb.storage')
 
 storage.start()
