@@ -2,11 +2,6 @@
 -- Simple Tarantool benchmark
 --
 
-box.cfg {
-}
-
---local os = require('os')
-
 local bench_name = 'microb'
 local metrics_number = 2
 local N = 10000
@@ -40,10 +35,8 @@ local function run ()
     return metric
 end
 
-res = run()
+return {
+    run = run
+}
 
-for k,v in pairs(res) do
-    print(k, v)
-end
-
-os.exit()
+--os.exit()
