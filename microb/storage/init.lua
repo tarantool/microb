@@ -5,8 +5,8 @@ local function start()
     local headers = box.space.headers
     if not headers then
         headers = box.schema.create_space('headers')
+        headers:create_index('primary', {unique = true, parts = {1, 'STR'}})
     end
-    headers:create_index('primary', {unique = true, parts = {1, 'STR'}})
     -- Space for storage metric value
     result = box.space.result 
     if not result then

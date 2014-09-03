@@ -23,14 +23,14 @@ end
 
 -- Function fot getting runtime some function
 
-local function diff (fun)
+local function diff (fun, ...)
     local start_time = now()
-    fun()
-    local diff = now() - start_time()
+    fun(...)
+    local diff = now() - start_time
     return diff
 end
 
 return {
-now = now
+now = now,
 diff = diff
 }
