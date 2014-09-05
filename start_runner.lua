@@ -1,17 +1,13 @@
---
 -- This is script for running Tarantool benchmarks 
---
 
 box.cfg {
+    log_level = 5,
+    --logger = 'runner.log',
+    --pid_file = 'runner.pid',
 }
 
---print(package.path)
+require('console').listen('127.0.0.1:33000')
 
-local microb = require('microb.benchmarks.simple')
+local microb = require('microb.runner')
 
-res = microb.run()
-
-for k,v in pairs(res) do
-    print (k, v)
-end
-
+microb.start()

@@ -16,10 +16,11 @@ local function run()
     s:create_index('primary', {unique = true, parts = {1, 'NUM'}})
     local time_diff = time.diff(insert, s)
     s:drop()
-    metric = {key = BENCH_NAME..'.insert', description = 'box.insert bench', unit     = 'units/milisec', size = N, time = time_diff}
-    return metric
+    local version = box.info.version
+    result = {key = BENCH_NAME..'.insert', description = 'box.insert bench', version = version, unit = 'units/milisec', size = N, time_diff = time_diff}
+    return result
 end
 
 return {
-    run = run
+run = run
 }
