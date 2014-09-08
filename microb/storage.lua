@@ -7,17 +7,21 @@ local socket = require('socket')
 local APP_DIR = '.'
 
 local function start(host, port)
+    -- Add grants for 'guest' users
+    box.schema.user.grant('guest', 'read,write,execute', 'universe')
+    
     -- Space for storage metric header
     local headers = box.space.headers
     if not headers then
         headers = box.schema.create_space('headers')
-        headers:create_index('primary', {unique = true, parts = {1, 'STR'}})
+        headers:create_index('primary', {unique = true, parts = {1, 'NUM'}})
+        headers:create_index('secondary', {unique = true, parts = {2, 'STR'}})
     end
     -- Space for storage metric value
     result = box.space.result 
     if not result then
-        result = box.schema.create_space('result')
-        result:create_index('primary', {unique = true, parts = {1, 'STR'}})
+        results = box.schema.create_space('results')
+        results:create_index('primary', {unique = true, parts = {1, 'NUM', 2, 'STR'}})
     end
     if host == nil or port == nil then
         error('Usage: start(host, port)')

@@ -45,6 +45,7 @@ local function start()
 
     -- Connection to remote storage by the use box.net.box
     conn = remote:new(STORAGE_HOST, STORAGE_PORT)
+    print (conn.state, conn:ping())
     if not conn:ping() then
         error('Remote storage not available or not started')
     end
@@ -52,10 +53,30 @@ local function start()
     -- Get results for all benchmarks in list
     for k,b in pairs(list) do
         res = run_bench(b)
-    
+        print ('res',res.key)
+        metric_id = conn.space.headers.index.secondary:select({res.key})[1]
+        print(metric_id)
+        if not metric_id then
+            log.info('The %s metric is not in the headers table', res.key)
+            -- Add tuple with metric in headers space
+            conn:call('box.space.headers:auto_increment', {res.key}, res.description, res.unit)
+            metric_id = conn.space.headers.index.secondary:select({res.key})
+            print ('res')
+            for k,v in pairs(metric_id) do print(k,v) end
+            conn.space.results:insert{res.key, res.version, res.size, res.time_diff}
+        else
+            log.info('We already had some benchmarks result for this metcrics')
+            if not conn.space.results:select({metric_id, res.version}) then
+                log.info('The %s metric on tarantool %s is not in the result table', res.key, res.version)
+                conn.space.results:insert{metric_id, res.version, res.size, res.time_diff}
+            else
+                 log.info('The %s metric on tarantool %s have tuple in the table. Updating this result', res.key, res.version)
+                 conn.space.results.res:update({metric_id, res.version}, {{res.size, res.time_diff}})
+            end
+        end
     end
     
-    os.exit() 
+    --os.exit() 
 end
 
 return {
