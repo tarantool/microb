@@ -19,21 +19,25 @@ local function run_bench(bench_name)
     f = io.open(fname, 'w')
     script = "box.cfg{}\nyaml=require('yaml')\nprint(yaml.encode(require('"..BENCH_MOD..bench_name.."').run()))\nos.exit()"
     f:write(script)
-
+    
+    -- Start script
     local fb = io.popen('tarantool < '..fname, 'r')
     local res = yaml.decode(fb:read('*a'))
     
     fb:close()
     f:close()
     os.remove(fname)
+
     if not res then 
         error ('There are not output results for '..bench_name..' benchmark')
     end
-    log.info('Have %s benchmark result', bench_name) 
+    log.info('Have %s benchmark result', bench_name)
+    
     for x, y in pairs(res) do
-        print (x, y)
+        print(x, y)
     end
-    return (res)
+    
+    return res
 end
 
 -- Function that  starts benchmarking process
@@ -44,34 +48,35 @@ local function start()
     end
 
     -- Connection to remote storage by the use box.net.box
-    conn = remote:new(STORAGE_HOST, STORAGE_PORT)
-    print (conn.state, conn:ping())
+    local conn = remote:new(STORAGE_HOST, STORAGE_PORT)
+    
     if not conn:ping() then
         error('Remote storage not available or not started')
     end
-    print('hey')
-    -- Get results for all benchmarks in list
+    
+-- Get results for all benchmarks in list
     for k,b in pairs(list) do
-        res = run_bench(b)
-        print ('res',res.key)
-        metric_id = conn.space.headers.index.secondary:select({res.key})[1]
-        print(metric_id)
-        if not metric_id then
+        local metric_id = nil
+        local res = run_bench(b)
+        local header = conn.space.headers.index.secondary:select({res.key})[1]
+        
+        -- Add metric in storage 
+        if not header then
             log.info('The %s metric is not in the headers table', res.key)
             -- Add tuple with metric in headers space
-            conn:call('box.space.headers:auto_increment', {res.key}, res.description, res.unit)
-            metric_id = conn.space.headers.index.secondary:select({res.key})
-            print ('res')
-            for k,v in pairs(metric_id) do print(k,v) end
-            conn.space.results:insert{res.key, res.version, res.size, res.time_diff}
+            conn:call('box.space.headers:auto_increment',{res.key ,res.description, res.unit})
+            metric_id = conn.space.headers.index.secondary:select({res.key})[1][1]
+            conn.space.results:insert{metric_id, res.version, res.size, res.time_diff}
+            log.info('The %s metric added in headers and results spaces with metric_id = %d', res.key, metric_id)
         else
+            metric_id = header[1] 
             log.info('We already had some benchmarks result for this metcrics')
             if not conn.space.results:select({metric_id, res.version}) then
-                log.info('The %s metric on tarantool %s is not in the result table', res.key, res.version)
                 conn.space.results:insert{metric_id, res.version, res.size, res.time_diff}
+                log.info('The %s metric added in results spaces with metric_id = %d and tarantool version = %s', res.key, metric_id, res.version)
             else
-                 log.info('The %s metric on tarantool %s have tuple in the table. Updating this result', res.key, res.version)
-                 conn.space.results.res:update({metric_id, res.version}, {{res.size, res.time_diff}})
+                conn.space.results:update({metric_id, res.version}, {{'=', 3, res.size}, {'=', 4, res.time_diff}})
+                log.info('The %s metric updated in results spaces with metric_id = %d and tarantool version = %s', res.key, metric_id, res.version)
             end
         end
     end
