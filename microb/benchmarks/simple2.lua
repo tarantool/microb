@@ -4,10 +4,10 @@
 
 local time = require('microb.time')
 
-local BENCH_NAME = 'simple'
+local BENCH_NAME = 'simple2'
 local BENCH_KEY = '.insert-select'
 local DESCRIPTION = 'box insert and select bench'
-local N = 10000
+local N = 100000
 
 local function bench(s)
     for i = 1, N do

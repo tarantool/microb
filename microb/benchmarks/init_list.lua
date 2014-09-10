@@ -1,3 +1,3 @@
 return {
-    'simple'
+    'simple', 'simple2'
 }
