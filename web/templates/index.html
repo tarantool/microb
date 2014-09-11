@@ -7,8 +7,13 @@
   <body>
     <div id="container" style="width:100%; height:400px;"></div>
     <script>
-      $(function () { 
-        $('#container').highcharts({
+      jQuery(document).ready(function($) { 
+          $.get("/bench",{},
+            function(data) {
+              alert(data);
+          });
+ 
+          $('#container').highcharts({
             chart: {
               type: 'bar'
           },
