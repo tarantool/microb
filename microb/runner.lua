@@ -7,12 +7,12 @@ local remote = require('net.box')
 local BENCH_MOD = 'microb.benchmarks.'
 local LIST_FILE = 'init_list'
 local STORAGE_HOST = '127.0.0.1'
-local STORAGE_PORT = '33002' 
+local STORAGE_PORT = '33011' 
 
--- Listing benchmark files
-local list = require(BENCH_MOD..LIST_FILE)
+local list = require(BENCH_MOD..LIST_FILE) -- Listing benchmark files
 
 -- Function for run some benchmark
+
 local function run_bench(bench_name)
     -- Make a temporary file fo start benchmark
     local fname = os.tmpname()
@@ -41,6 +41,7 @@ local function run_bench(bench_name)
 end
 
 -- Function that  starts benchmarking process
+
 local function start()
     log.info('Start Tarantool benchmarking')
     if not list then
@@ -54,7 +55,7 @@ local function start()
         error('Remote storage not available or not started')
     end
     
--- Get results for all benchmarks in list
+    -- Get results for all benchmarks in list
     for k,b in pairs(list) do
         local metric_id = nil
         local res = run_bench(b)

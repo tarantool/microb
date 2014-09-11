@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+  </head>
+  <body>
+    <div id="container" style="width:100%; height:400px;"></div>
+    <script>
+      $(function () { 
+        $('#container').highcharts({
+            chart: {
+              type: 'bar'
+          },
+          title: {
+              text: 'Tarantool benchmarking'
+          },
+          xAxis: {
+              categories: ['1.6.3-141', '1.6.3-142', '1.6.3-143']
+          },
+          yAxis: {
+              title: {
+                  text: 'sec'
+              }
+          },
+          series: [{
+              name: 'Bench1',
+              data: [1, 3, 4]
+          }, {
+              name: 'Bench2',
+              data: [5, 7, 3]
+          }]
+        });
+      });
+    </script>
+  </body>
+</html>
+

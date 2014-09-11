@@ -6,6 +6,8 @@ local socket = require('socket')
 
 local APP_DIR = '.'
 
+-- Function for start tarantool storage
+
 local function start(host, port)
     -- Add grants for 'guest' users
     box.schema.user.grant('guest', 'read,write,execute', 'universe')

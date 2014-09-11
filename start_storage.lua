@@ -6,7 +6,7 @@ local STORAGE_PORT = '33001'
 
 box.cfg {
     log_level = 5,
-    listen = 33002,
+    listen = 33011,
     --background = true,
     --logger = 'storage.log',
     --pid_file = 'storage.pid'    
