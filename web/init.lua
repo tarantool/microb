@@ -10,9 +10,6 @@ local APP_DIR = './web/'
 local STORAGE_HOST = '127.0.0.1'
 local STORAGE_PORT = '33011'
 
--- For use highcharts.js (see .../templates/index.html)
-local DATA_CFG = {categories = {}, series = {{name = nil, data = {}}}}   
-
 -- Handler fo request
 
 local function handler(self)
@@ -23,7 +20,11 @@ local function handler(self)
         error('Remote storage not available or not started')
     end
     log.info('Start getting data')
-    
+   
+   
+    -- For use highcharts.js (see .../templates/index.html)
+    local DATA_CFG = {categories = {}, series = {}}   
+ 
     -- Get data results from storage and data configuration
     local dt = DATA_CFG
     local sel = conn.space.results:select({iterator = ALL})
@@ -32,18 +33,24 @@ local function handler(self)
     
     for k,v in pairs(sel) do
         print(k,v)
-        if id == v[1] then   
-            table.insert(series.data, v[3]/v[4])
-        else
-            series = {name = v[1], data = v[3]/v[4]}
-        end
+        print ('version')
+        print (dt.categories[v[2]])
+        
         local i = nil
         for x,y in pairs(dt.categories) do
-            if not y == v[2] then
+            if y == v[2] then
                 i = 1
                 break
             end
         end
+        if not i then table.insert(dt.categories, v[2]) end
+        
+        if id == v[1] then   
+            table.insert(series.data, v[3]/v[4])
+        else
+            series = {name = v[1], data = {v[3]/v[4]}}
+        end
+        
         if not i then table.insert(dt.categories, v[2]) end
         table.insert(dt.series, series) 
     end     
