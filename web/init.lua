@@ -33,17 +33,20 @@ local function handler(self)
     
     for k,v in pairs(sel) do
         print(k,v)
-        print ('version')
-        print (dt.categories[v[2]])
-        
+        print('have result')
         local i = nil
         for x,y in pairs(dt.categories) do
+            print ('version in categ',y)  
             if y == v[2] then
+                print ('have version in categ')
                 i = 1
                 break
             end
         end
-        if not i then table.insert(dt.categories, v[2]) end
+        if not i then
+            table.insert(dt.categories, v[2])
+            print('Insert version in catergor')
+        end
         
         if id == v[1] then   
             table.insert(series.data, v[3]/v[4])
@@ -51,8 +54,8 @@ local function handler(self)
             series = {name = v[1], data = {v[3]/v[4]}}
         end
         
-        if not i then table.insert(dt.categories, v[2]) end
-        table.insert(dt.series, series) 
+        table.insert(dt.series, series)
+        id = v[1] 
     end     
     
     dt = json.encode(dt)

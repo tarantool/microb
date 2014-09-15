@@ -72,7 +72,8 @@ local function start()
         else
             metric_id = header[1] 
             log.info('We already had some benchmarks result for this metcrics')
-            if not conn.space.results:select({metric_id, res.version}) then
+            if not conn.space.results:select({metric_id, res.version})[1] then
+                log.info('We have not result for metric with id %s on Tarantool %s version', metric_id, res.version) 
                 conn.space.results:insert{metric_id, res.version, res.size, res.time_diff}
                 log.info('The %s metric added in results spaces with metric_id = %d and tarantool version = %s', res.key, metric_id, res.version)
             else
