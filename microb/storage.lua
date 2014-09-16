@@ -20,8 +20,8 @@ local function start(host, port)
         headers:create_index('secondary', {unique = true, parts = {2, 'STR'}})
     end
     -- Space for storage metric value
-    result = box.space.result 
-    if not result then
+    local results = box.space.results
+    if not results then
         results = box.schema.create_space('results')
         results:create_index('primary', {unique = true, parts = {1, 'NUM', 2, 'STR'}})
     end

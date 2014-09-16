@@ -29,12 +29,12 @@ local function handler(self)
     local dt = DATA_CFG
     local sel = conn.space.results:select({iterator = ALL})
     local id = 0
-    local series = {}
+    local series = nil
     
     for k,v in pairs(sel) do
-        print(k,v)
-        print('have result')
         local i = nil
+        local mname = conn.space.headers:select{v[1]}[1][2]
+        print (mname) 
         for x,y in pairs(dt.categories) do
             print ('version in categ',y)  
             if y == v[2] then
@@ -51,13 +51,19 @@ local function handler(self)
         if id == v[1] then   
             table.insert(series.data, v[3]/v[4])
         else
-            series = {name = v[1], data = {v[3]/v[4]}}
+            if series then
+                table.insert(dt.series, series)
+            end
+            series = {name = mname, data = {v[3]/v[4]}}
+            
         end
         
-        table.insert(dt.series, series)
         id = v[1] 
     end     
-    
+    if series then
+        table.insert(dt.series, series)
+    end
+
     dt = json.encode(dt)
     print(dt)
     return self:render({ text = dt })
