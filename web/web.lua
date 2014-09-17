@@ -6,7 +6,7 @@ local json = require('json')
 local server = require('http.server')
 local remote = require('net.box')
 
-local APP_DIR = './web/'
+local APP_DIR = '.'
 local STORAGE_HOST = '127.0.0.1'
 local STORAGE_PORT = '33011'
 

@@ -4,9 +4,8 @@
 
 local time = require('microb.time')
 
-local BENCH_NAME = 'simple'
-local BENCH_KEY = '.insert-select'
-local DESCRIPTION = 'box insert and select bench'
+local BENCH_NAME = 'simple.insert-select'
+local DESCRIPTION = 'Simple insert and select benchmark'
 local N = 10000
 
 local function bench(s)
@@ -17,12 +16,12 @@ local function bench(s)
 end
 
 local function run()
-    local s = box.schema.create_space(BENCH_NAME)
+    local s = box.schema.create_space('glade')
     s:create_index('primary', {unique = true, parts = {1, 'NUM'}})
     local time_diff = time.diff(bench, s)
     s:drop()
     local version = box.info.version
-    result = {key = BENCH_NAME..BENCH_KEY, description = DESCRIPTION, version = version, unit = 'units/milisec', size = N, time_diff = time_diff}
+    result = {key = BENCH_NAME, description = DESCRIPTION, version = version, unit = 'units/milisec', size = N, time_diff = time_diff}
     return result
 end
 
