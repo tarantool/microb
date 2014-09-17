@@ -1,3 +1,3 @@
 return {
-    'simple', 'simple2'
+    'simple', 'insert-hash', 'insert-tree', 'select-hash', 'select-tree', 'delete', 'update'
 }

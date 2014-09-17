@@ -5,6 +5,7 @@ local log = require('log')
 local remote = require('net.box')
 
 local BENCH_MOD = 'microb.benchmarks.'
+local BENCH_COUNT = 10
 local LIST_FILE = 'init_list'
 local STORAGE_HOST = '127.0.0.1'
 local STORAGE_PORT = '33011' 
@@ -21,10 +22,22 @@ local function run_bench(bench_name)
     f:write(script)
     
     -- Start script
-    local fb = io.popen('tarantool < '..fname, 'r')
-    local res = yaml.decode(fb:read('*a'))
+    local median_time = 0 -- Variable fo median time value from BENCH_COUNT sampling
+    local res = {}
+
+    for i=1, BENCH_COUNT, 1 do
+        local fb = io.popen('tarantool < '..fname, 'r')
+        res = yaml.decode(fb:read('*a'))
+        fb:close()
+        median_time = median_time + res.time_diff 
+    end
+
+    if not res then 
+        error ('There are not output results for '..bench_name..' benchmark')
+    end
     
-    fb:close()
+    res.time_diff = median_time/BENCH_COUNT
+    
     f:close()
     os.remove(fname)
 
@@ -57,6 +70,7 @@ local function start()
     
     -- Get results for all benchmarks in list
     for k,b in pairs(list) do
+        log.info("Start '%s' benchmark", b)
         local metric_id = nil
         local res = run_bench(b)
         local header = conn.space.headers.index.secondary:select({res.key})[1]
@@ -83,7 +97,7 @@ local function start()
         end
     end
     
-    --os.exit() 
+    os.exit() 
 end
 
 return {

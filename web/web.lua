@@ -33,9 +33,13 @@ local function handler(self)
     
     for k,v in pairs(sel) do
         local i = nil
-        local mname = conn.space.headers:select{v[1]}[1][2]
-        print (mname) 
+
+        -- Get benchmark metric name
+        local mname = conn.space.headers:select{v[1]}[1][3]
+        
         for x,y in pairs(dt.categories) do
+
+        -- Get Tarantool version 
             print ('version in categ',y)  
             if y == v[2] then
                 print ('have version in categ')
@@ -48,13 +52,17 @@ local function handler(self)
             print('Insert version in catergor')
         end
         
+        -- Get result data
+        local result_data = (v[3]/v[4])*1000
+
+        -- Get benchmark result
         if id == v[1] then   
-            table.insert(series.data, v[3]/v[4])
+            table.insert(series.data, result_data)
         else
             if series then
                 table.insert(dt.series, series)
             end
-            series = {name = mname, data = {v[3]/v[4]}}
+            series = {name = mname, data = {result_data}}
             
         end
         
