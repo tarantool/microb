@@ -4,52 +4,38 @@ local yaml = require('yaml')
 local log = require('log')
 local remote = require('net.box')
 
-local BENCH_MOD = 'microb.benchmarks.'
+local MODULE = 'microb.'
+local BENCH_MOD = MODULE..'benchmarks.'
+local BENCH_NAME = BENCH_MOD..'benchmarks'-- Benchmarking module
 local BENCH_COUNT = 10
-local LIST_FILE = 'init_list'
 local STORAGE_HOST = '127.0.0.1'
 local STORAGE_PORT = '33011' 
 
-local list = require(BENCH_MOD..LIST_FILE) -- Listing benchmark files
-
 -- Function for run some benchmark
 
-local function run_bench(bench_name)
+local function run_bench()
     -- Make a temporary file fo start benchmark
     local fname = os.tmpname()
     f = io.open(fname, 'w')
-    script = "box.cfg{}\nyaml=require('yaml')\nprint(yaml.encode(require('"..BENCH_MOD..bench_name.."').run()))\nos.exit()"
+    script = "box.cfg{wal_mode='none'}\nyaml=require('yaml')\nprint(yaml.encode(require('"..BENCH_NAME.."').run()))\nos.exit()"
     f:write(script)
     
     -- Start script
-    local median_time = 0 -- Variable fo median time value from BENCH_COUNT sampling
     local res = {}
 
-    for i=1, BENCH_COUNT, 1 do
-        local fb = io.popen('tarantool < '..fname, 'r')
-        res = yaml.decode(fb:read('*a'))
-        fb:close()
-        median_time = median_time + res.time_diff 
-    end
+    local fb = io.popen('tarantool < '..fname, 'r')
+    res = yaml.decode(fb:read('*a'))
+    fb:close()
 
     if not res then 
-        error ('There are not output results for '..bench_name..' benchmark')
+        error ('There are not output results for benchmark')
     end
-    
-    res.time_diff = median_time/BENCH_COUNT
     
     f:close()
     os.remove(fname)
 
-    if not res then 
-        error ('There are not output results for '..bench_name..' benchmark')
-    end
-    log.info('Have %s benchmark result', bench_name)
-    
-    for x, y in pairs(res) do
-        print(x, y)
-    end
-    
+    log.info('Have benchmark result')
+    print(res) 
     return res
 end
 
@@ -57,9 +43,6 @@ end
 
 local function start()
     log.info('Start Tarantool benchmarking')
-    if not list then
-    error ('Benchmarks list is empty')
-    end
 
     -- Connection to remote storage by the use box.net.box
     local conn = remote:new(STORAGE_HOST, STORAGE_PORT)
@@ -68,11 +51,11 @@ local function start()
         error('Remote storage not available or not started')
     end
     
-    -- Get results for all benchmarks in list
-    for k,b in pairs(list) do
-        log.info("Start '%s' benchmark", b)
-        local metric_id = nil
-        local res = run_bench(b)
+    -- Get results for benchmarks
+    local metric_id = nil
+    local result = run_bench(b)
+    
+    for k, res in pairs(result) do    
         local header = conn.space.headers.index.secondary:select({res.key})[1]
         
         -- Add metric in storage 
