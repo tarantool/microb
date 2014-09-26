@@ -10,7 +10,7 @@ local time = require('microb.time')
 local N = 2^32
 local COUNT = require('microb.init_cfg').count
 
-local index = {'hash', 'tree'} -- Options indexes
+local index = {'tree'} -- Options indexes
 local format = {'NUM', 'STR'} -- Options keys view
 local result = {}
 
@@ -30,7 +30,8 @@ local function update(s, key, n)
     s:update({key})
 end
 
-local function delete_bench(s, key, n)
+local function delete_bench(s, n)
+    local key = math.random(0, n)
     s:delete({key})
 end
 
@@ -54,10 +55,10 @@ end
 
 local function bench(s, fun, name, index)
     math.randomseed(0)
-    log.info ('Start %s functions benchmark with %s index', name, index)
+    log.info ('Start %s functions benchmark with %s index and sophia engine', name, index)
     local time_diff = time.diff(do_bench, COUNT, fun, s, N)
     local version = box.info.version
-    local res = {key = name..'.'..index, description = name..' benchmark with '..index..' index', version = version, unit = 'units/milisec', size = COUNT, time_diff = time_diff}
+    local res = {key = 'sophia.'..name..'.'..index, description = name..' sophia benchmark with '..index..' index', version = version, unit = 'units/milisec', size = COUNT, time_diff = time_diff}
     for k,v in pairs(res) do
         log.info('%s, %s', k,v)
     end
@@ -69,7 +70,7 @@ end
 local function run()
     --Select index option
     for x,y in pairs(index) do
-        local s = box.schema.create_space('glade')
+        local s = box.schema.create_space('glade', {engine = 'sophia'})
         s:create_index('primary', {type = y, parts = {1, 'NUM'}})
         -- Selecting benchmark funcion
         for k,v in pairs(list) do
