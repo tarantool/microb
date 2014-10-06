@@ -7,21 +7,26 @@ local server = require('http.server')
 local remote = require('net.box')
 
 local APP_DIR = '.'
-local STORAGE_HOST = '127.0.0.1'
-local STORAGE_PORT = '33011'
+
+local conn = nil
+
+local function remote_box(host, port)
+    print ('start_remote')
+    if conn == nil then
+        conn = remote:new(host, port, { reconnect_after = .1 })
+    end
+    return conn
+end
 
 -- Handler fo request
-
 local function handler(self)
-    -- Connection to remote storage by the use box.net.box
-    local conn = remote:new(STORAGE_HOST, STORAGE_PORT)
-    
+-- Start box-net-box connection for using storage
+    local conn = conn    
     if not conn:ping() then
         error('Remote storage not available or not started')
     end
     log.info('Start getting data')
-   
-   
+    print (conn:ping())
     -- For use highcharts.js (see .../templates/index.html)
     local DATA_CFG = {categories = {}, series = {}}   
  
@@ -79,12 +84,19 @@ end
 
 -- Start tarantool server
 
-local function start(host, port)
-    if host == nil or port == nil then
+local function start(web_host, web_port, storage_host, storage_port)
+    if web_host == nil or web_port == nil then
         error('Usage: start(host, port)')
     end
-    httpd = server.new(host, port, {app_dir = APP_DIR})
-    log.info('Started http server at host = %s and port = %s ', host, port)
+    httpd = server.new(web_host, web_port, {app_dir = APP_DIR})
+    
+    if not httpd then
+        error('Tarantool https server not start, have a problem')
+    end
+    
+    conn = remote_box(storage_host, storage_port)
+    
+    log.info('Started http server at host = %s and port = %s ', web_host, web_port)
 
     httpd:route({ path = '', file = '/index.html'})
     httpd:route({ path = '/bench'}, handler)
