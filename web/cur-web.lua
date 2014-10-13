@@ -19,21 +19,6 @@ local function remote_box(host, port)
     return conn
 end
 
---[[ Function for transformation version string in some integer
-Example:
-version = 1.6.3-404-g4f59a4
-int_version = 1 063 404  
-]]--
-
-local function int_v(version)
-    local a = string.match(version, '^(.-)%.')
-    local b = string.match(version, '%.(.*)%.')
-    local c = string.match(version, '%.(%d-)%-') 
-    local d = string.match(version, '%-(%d*)%-')
-    local result = a * 10^8 + b * 10^6 + c * 1000 + d
-    return result
-end
-
 -- Handler for request
 local function handler(self)
 -- Start box-net-box connection for using storage
@@ -65,65 +50,33 @@ local function handler(self)
     local series = nil
     
     if not sel[1] then
-       log.info('Storage is empty')
-    end
-
-    -- Add version and sort this
-    local vt = {} -- versions table
-    for _,res in pairs(sel) do 
-        local i = nil
-        local version = res[2]
-        -- Check that Tarantool version is in versions table 
-        print ('version in categ',version, i)  
-        for k,v in pairs(vt) do
-            if v == version then
-                print ('have version in categ')
-                i = 1
-                break
-            end
-        end
-        if not i then
-            vt[int_v(version)] = version
-            print('Insert version in catergor')
-        end
-    end
-
-    local t = {} -- table for sort int_version
-  
-    for k,v in pairs(vt) do
-        print(k,v)
-        table.insert(t, k)
-    end
-
-    table.sort(t)
-
-    for _,v in ipairs(t) do
-        print(v)
-        table.insert(dt.categories, vt[v])
-    end
-
-    for x,y in pairs(dt.categories) do
-        print (x,y)
+       log.error('Storage is empty')
     end
 
     for _,res in ipairs(sel) do
         
         local i = nil
         local metric_id = res[1]
-        local version = res[2] 
+
         -- Get benchmark metric name
         local mname = conn.space.headers:select{metric_id}[1][3]
         
-        local version_id = nil
+        for _,version in ipairs(dt.categories) do
 
-        -- Get version id from version table
-        for k,v in ipairs(dt.categories) do
-            if version == v then
-                version_id = k
-                print ('version_id = ', version_id)
+        -- Get Tarantool version 
+            print ('version in categ',version)  
+            if version == res[2] then
+                print ('have version in categ')
+                i = 1
+                break
             end
         end
-                
+
+        if not i then
+            table.insert(dt.categories, res[2])
+            print('Insert version in catergor')
+        end
+        
         -- Get result data
         req = res[3]
         time = res[4] -- in milisec
@@ -131,31 +84,23 @@ local function handler(self)
 
         -- Get benchmark result
         if id == metric_id then   
-            table.insert(series.data, result_data, version_id)
+            table.insert(series.data, result_data)
         else
             if series then
                 table.insert(dt.series, series)
             end
-            series = {name = mname, data = {}}
-            table.insert(series.data, result_data, version_id)
+            series = {name = mname, data = {result_data}}
+            
         end
         
         id = metric_id
-    end
-    
+    end     
     if series then
         table.insert(dt.series, series)
     end
-    for k,v in pairs(dt.series) do
-print ('series')
-for x,y in pairs(v.data) do
-print (x,y)
-end
     
-end
     dt = json.encode(dt)
     print(dt)
-
     return self:render({ text = dt })
 end
 
