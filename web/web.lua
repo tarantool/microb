@@ -105,7 +105,7 @@ local function handler(self)
     for x,y in pairs(dt.categories) do
         print (x,y)
     end
-
+    print ('Table vt size=', #dt.categories)
     for _,res in ipairs(sel) do
         
         local i = nil
@@ -115,11 +115,12 @@ local function handler(self)
         local mname = conn.space.headers:select{metric_id}[1][3]
         
         local version_id = nil
-
+        local j = 0
         -- Get version id from version table
         for k,v in ipairs(dt.categories) do
+            j = j + 1 
             if version == v then
-                version_id = k
+                version_id = j
                 print ('version_id = ', version_id)
             end
         end
@@ -131,13 +132,16 @@ local function handler(self)
 
         -- Get benchmark result
         if id == metric_id then   
-            table.insert(series.data, result_data, version_id)
+            table.insert(series.data, version_id, result_data)
         else
             if series then
                 table.insert(dt.series, series)
             end
             series = {name = mname, data = {}}
-            table.insert(series.data, result_data, version_id)
+            for i=1,#dt.categories do
+            table.insert(series.data, 0)
+            end
+            table.insert(series.data, version_id, result_data)
         end
         
         id = metric_id
