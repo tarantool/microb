@@ -12,7 +12,7 @@ local conn = nil
 
 -- Function for box-net-bo connect/reconnert
 local function remote_box(host, port)
-    print ('start_remote')
+    log.info('Starting_remote connection box-net-box on host = %s, port = %s', host, port)
     if conn == nil then
         conn = remote:new(host, port, { reconnect_after = .1 })
     end
@@ -24,7 +24,6 @@ Example:
 version = 1.6.3-404-g4f59a4
 int_version = 1 063 404  
 ]]--
-
 local function int_v(version)
     local a = string.match(version, '^(.-)%.')
     local b = string.match(version, '%.(.*)%.')
@@ -39,7 +38,7 @@ local function handler(self)
 -- Start box-net-box connection for using storage
     local conn = conn    
     if not conn:ping() then
-        error('Remote storage not available or not started')
+        log.info('Remote storage not available or not started')
     end
     
     log.info('Start getting data')
@@ -59,10 +58,8 @@ local function handler(self)
     
     local dt = {categories = {}, series = {}}   
  
-    -- Get data results from storage and data configuration
+    -- Get data results from storage(result table) and data configuration
     local sel = conn.space.results:select({iterator = ALL})
-    local id = 0
-    local series = nil
     
     if not sel[1] then
        log.info('Storage is empty')
@@ -74,24 +71,20 @@ local function handler(self)
         local i = nil
         local version = res[2]
         -- Check that Tarantool version is in versions table 
-        print ('version in categ',version, i)  
         for k,v in pairs(vt) do
             if v == version then
-                print ('have version in categ')
                 i = 1
                 break
             end
         end
         if not i then
             vt[int_v(version)] = version
-            print('Insert version in catergor')
         end
     end
 
     local t = {} -- table for sort int_version
   
     for k,v in pairs(vt) do
-        print(k,v)
         table.insert(t, k)
     end
 
@@ -101,11 +94,16 @@ local function handler(self)
         print(v)
         table.insert(dt.categories, vt[v])
     end
-
+    
+    log.info ('Tarantool version added in categories table')
     for x,y in pairs(dt.categories) do
         print (x,y)
     end
-    print ('Table vt size=', #dt.categories)
+    
+    local id = 0
+    local series = nil
+    
+    -- Iteration for all metric in result table
     for _,res in ipairs(sel) do
         
         local i = nil
@@ -113,7 +111,8 @@ local function handler(self)
         local version = res[2] 
         -- Get benchmark metric name
         local mname = conn.space.headers:select{metric_id}[1][3]
-        
+        print ('Get result for metric ', mname)
+        print ('metric_id = ', metric_id)        
         local version_id = nil
         local j = 0
         -- Get version id from version table
@@ -132,16 +131,16 @@ local function handler(self)
 
         -- Get benchmark result
         if id == metric_id then   
-            table.insert(series.data, version_id, result_data)
+            series.data[version_id] = result_data
         else
             if series then
                 table.insert(dt.series, series)
             end
             series = {name = mname, data = {}}
             for i=1,#dt.categories do
-            table.insert(series.data, 0)
+                table.insert(series.data, 0)
             end
-            table.insert(series.data, version_id, result_data)
+            series.data[version_id] = result_data
         end
         
         id = metric_id
