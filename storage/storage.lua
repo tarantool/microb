@@ -23,9 +23,16 @@ local function start(host, port)
     local results = box.space.results
     if not results then
         results = box.schema.create_space('results')
-        results:create_index('primary', {unique = true, parts = {1, 'NUM', 2, 'STR'}})
+        results:create_index('primary', {unique = true, parts = {1, 'NUM', 2, 'NUM'}})
     end
-    if host == nil or port == nil then
+    -- Space for storage tarantool version
+    local versions = box.space.versions
+    if not versions then
+        results = box.schema.create_space('versions')
+        results:create_index('primary', {unique = true, parts = {1, 'NUM'}})
+    end
+    
+   if host == nil or port == nil then
         error('Usage: start(host, port)')
     end
     httpd = server.new(host, port, {app_dir = APP_DIR})

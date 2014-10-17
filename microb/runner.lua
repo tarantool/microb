@@ -9,6 +9,19 @@ local MODULE = 'microb.benchmarks.'
 local list = require('microb.cfg').list -- Listing benchmark files
 local result = {} -- Table for benchmark results
 
+--[[ Function for transformation version string in some integer
+Example:
+version = 1.6.3-404-g4f59a4
+int_version = 1 06 030 404 
+]]--
+
+local function int_v(version)
+    local a, b, c, d = string.match(version, '^(.-)%.(.*)%.(%d-)%-(%d*)%-')
+    local result = a * 10^8 + b * 10^6 + c * 10^4 + d
+    return result
+end
+
+
 -- Function for run some benchmark
 
 local function run_bench(bench_name)
@@ -70,7 +83,6 @@ local function start(storage_host, storage_port)
         
         for k,res in pairs(result) do
             local header = conn.space.headers.index.secondary:select({res.key})[1]
-            print ('!!!!!!!!!!!!!!!!!!'..res.key)
             -- Add metric in storage 
             if not header then
                 log.info('The %s metric is not in the headers table', res.key)
@@ -78,8 +90,11 @@ local function start(storage_host, storage_port)
                 header = conn:call('box.space.headers:auto_increment',{res.key ,res.description, res.unit})[1]
                 log.info('The %s metric added in headers space with metric_id = %d', res.key, header[1])
             end
+            local int_version = int_v(res.version)
+            conn.space.versions:replace{int_version, res.version}
+            log.info('The %s tarantool version in versions table', res.version)
             metric_id = header[1]
-            conn.space.results:replace{metric_id, res.version, res.size, res.time_diff}
+            conn.space.results:replace{int_version, metric_id, res.size, res.time_diff}
             log.info('The %s metric added/updated in results spaces with metric_id = %d and tarantool version = %s', res.key, metric_id, res.version)
         end
     end

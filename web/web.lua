@@ -10,7 +10,8 @@ local APP_DIR = '.'
 
 local conn = nil
 
--- Function for box-net-bo connect/reconnert
+-- Function for box-net-box connect/reconnect
+
 local function remote_box(host, port)
     log.info('Starting_remote connection box-net-box on host = %s, port = %s', host, port)
     if conn == nil then
@@ -19,21 +20,8 @@ local function remote_box(host, port)
     return conn
 end
 
---[[ Function for transformation version string in some integer
-Example:
-version = 1.6.3-404-g4f59a4
-int_version = 1 063 404  
-]]--
-local function int_v(version)
-    local a = string.match(version, '^(.-)%.')
-    local b = string.match(version, '%.(.*)%.')
-    local c = string.match(version, '%.(%d-)%-') 
-    local d = string.match(version, '%-(%d*)%-')
-    local result = a * 10^8 + b * 10^6 + c * 1000 + d
-    return result
-end
-
 -- Handler for request
+
 local function handler(self)
 -- Start box-net-box connection for using storage
     local conn = conn    
@@ -45,7 +33,7 @@ local function handler(self)
     
     --[[####################################################
     JSON use highcharts.js (see .../templates/index.html)
-    Example:
+    Example data table:
     {
         "series":[
             {"name":"insert benchmark", "data":[111, 222]},
@@ -56,106 +44,59 @@ local function handler(self)
     }
     ########################################################]]-- 
     
-    local dt = {categories = {}, series = {}}   
+    local dt = {series = {}, categories = {}} -- data table   
  
-    -- Get data results from storage(result table) and data configuration
-    local sel = conn.space.results:select({iterator = ALL})
+    -- Get data results from storage(headers table) and data configuration
+    local sel = conn.space.headers:select({iterator = ALL})
     
+    -- Check the availability of data
     if not sel[1] then
        log.info('Storage is empty')
     end
+ 
+    -- Configuration series {name = 'name' , data = {}} each metric
+    local st = {} -- table with series
+    
+    for _,tuple in ipairs(sel) do
+        local metric_id = tuple[1]
+        st[metric_id] = {name = tuple[2], data = {}}
+    end
+    
+    -- Get data from storage versions table
+    sel = conn.space.versions:select({iterator = ALL})
+   
+    local i = sel[1][2]
+    log.info('Get data from version table. First version %s', i) 
+    
+    -- Iteration for all version in version table
+    for _,version in ipairs(sel) do
+        -- Insert version in categories table
+        table.insert(dt.categories, version[2])
+        log.debug('Add %s version in categories', version[2])
 
-    -- Add version and sort this
-    local vt = {} -- versions table
-    for _,res in pairs(sel) do 
-        local i = nil
-        local version = res[2]
-        -- Check that Tarantool version is in versions table 
-        for k,v in pairs(vt) do
-            if v == version then
-                i = 1
-                break
+        -- Iteration on the metric
+        for metric_id, series in pairs(st) do
+            local res = conn.space.results:select({version[1], metric_id})
+            log.debug('Get result', res[1])
+            if res[1] then 
+                -- Calculate benchmark result
+                local req = res[1][3]
+                local time = res[1][4] -- in milisec
+                local result_data = (req/time)*1000
+                table.insert(series.data, result_data)
+            else
+                table.insert(series.data, 0) 
             end
-        end
-        if not i then
-            vt[int_v(version)] = version
+            log.debug('Insert result') 
         end
     end
+    log.info('Add all result in series data')
+    
+    -- Insert series from st in dt.series
+    for metric_id, series in pairs(st) do
+       table.insert(dt.series, series) 
+    end 
 
-    local t = {} -- table for sort int_version
-  
-    for k,v in pairs(vt) do
-        table.insert(t, k)
-    end
-
-    table.sort(t)
-
-    for _,v in ipairs(t) do
-        print(v)
-        table.insert(dt.categories, vt[v])
-    end
-    
-    log.info ('Tarantool version added in categories table')
-    for x,y in pairs(dt.categories) do
-        print (x,y)
-    end
-    
-    local id = 0
-    local series = nil
-    
-    -- Iteration for all metric in result table
-    for _,res in ipairs(sel) do
-        
-        local i = nil
-        local metric_id = res[1]
-        local version = res[2] 
-        -- Get benchmark metric name
-        local mname = conn.space.headers:select{metric_id}[1][3]
-        print ('Get result for metric ', mname)
-        print ('metric_id = ', metric_id)        
-        local version_id = nil
-        local j = 0
-        -- Get version id from version table
-        for k,v in ipairs(dt.categories) do
-            j = j + 1 
-            if version == v then
-                version_id = j
-                print ('version_id = ', version_id)
-            end
-        end
-                
-        -- Get result data
-        req = res[3]
-        time = res[4] -- in milisec
-        local result_data = (req/time)*1000
-
-        -- Get benchmark result
-        if id == metric_id then   
-            series.data[version_id] = result_data
-        else
-            if series then
-                table.insert(dt.series, series)
-            end
-            series = {name = mname, data = {}}
-            for i=1,#dt.categories do
-                table.insert(series.data, 0)
-            end
-            series.data[version_id] = result_data
-        end
-        
-        id = metric_id
-    end
-    
-    if series then
-        table.insert(dt.series, series)
-    end
-    for k,v in pairs(dt.series) do
-print ('series')
-for x,y in pairs(v.data) do
-print (x,y)
-end
-    
-end
     dt = json.encode(dt)
     print(dt)
 
