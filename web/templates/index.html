@@ -5,7 +5,20 @@
     <script src="http://code.highcharts.com/highcharts.js"></script>
   </head>
   <body>
-    <div id="container" style="width:75%; height:800px;"></div>
+    <h2> Tarantool benchmarking </h2>
+    <h4>Please, select tarantool versions interval</h4>
+    
+    <select>
+      <option value="Sony">Sony</option>
+      <option value="Toshiba">Toshiba</option>
+      <option value="Acer">Acer</option>
+      <option value="Asus">Asus</option>
+    </select>
+    <select>
+      <option value='version1'>1.6.3-404-gh2</option>
+    </select>
+    <input type="submit" name=reload value='reload'>
+    <div id="container" style="width:80%; height:600px;"></div>
     <script>
       jQuery(document).ready(function($) { 
           $.get("/bench",{},
@@ -16,7 +29,7 @@
                 type: 'column',
             },
             title: {
-                text: 'Tarantool benchmarking'
+                text:'Benchmark results' 
             },
             xAxis: {
                 categories: dt.categories
