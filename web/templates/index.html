@@ -8,23 +8,32 @@
     <h2> Tarantool benchmarking </h2>
     <h4>Please, select tarantool versions interval</h4>
     
-    <select>
-      <option value="Sony">Sony</option>
-      <option value="Toshiba">Toshiba</option>
-      <option value="Acer">Acer</option>
-      <option value="Asus">Asus</option>
+    <select id="firstVersionId" name="firstVersion">
+      <option></option>
     </select>
-    <select>
-      <option value='version1'>1.6.3-404-gh2</option>
+    <select id="lastVersionId" name="lastVesrion">
+      <option></option>
     </select>
-    <input type="submit" name=reload value='reload'>
+    <script>
+      var firstVersion = document.getElementById("firstVersionId");
+      var lastVersion = document.getElementById("lastVersionId");
+      $.get("/versionList",{},
+        function(data) {
+          var dt = JSON.parse(data);
+          for (var i = 0; i < dt.length; i++) {
+              firstVersion.options[firstVersion.options.length] = new Option(dt[i], dt[i]);
+              lastVersion.options[lastVersion.options.length] = new Option(dt[i], dt[i]);
+          }
+        });
+    </script>
+    <input id="reloadId" type="submit" name="reload" value="reload">
     <div id="container" style="width:80%; height:600px;"></div>
     <script>
-      jQuery(document).ready(function($) { 
-          $.get("/bench",{},
-            function(data) {
+      function get_req(firstVersion, lastVersion) {
+        $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion },
+          function(data) {
             var dt = JSON.parse(data);
-            $('#container').highcharts({
+            $("#container").highcharts({
               chart: {
                 type: 'column',
             },
@@ -40,8 +49,23 @@
                 }
             },
             series: dt.series,
+            });
           });
-          });
+      };
+      jQuery(document).ready(function($) {
+        get_req();
+        var elem = document.getElementById("reloadId");
+        var firstVersion = document.getElementById("firstVersionId");
+        var lastVersion = document.getElementById("lastVersionId");
+        elem.onclick = function() {
+          //alert(firstVersion.options[firstVersion.selectedIndex].value)
+          if ( firstVersion.selectedIndex == 0 || lastVersion.selectedIndex == 0 ) {
+            alert('You should choose versions interval');
+            return;
+          } 
+          get_req(firstVersion.options[firstVersion.selectedIndex].value,
+            lastVersion.options[lastVersion.selectedIndex].value);
+        }
       });
     </script>
   </body>

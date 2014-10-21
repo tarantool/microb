@@ -20,10 +20,50 @@ local function remote_box(host, port)
     return conn
 end
 
+--[[ Function for transformation version string in some integer
+ 13 Example:
+ 14 version = 1.6.3-404-g4f59a4
+ 15 int_version = 1 06 030 404 
+ 16 ]]--
+
+local function int_v(version)
+    local a, b, c, d = string.match(version, '^(.-)%.(.*)%.(%d-)%-(%d*)%-')
+    local result = a * 10^8 + b * 10^6 + c * 10^4 + d
+    return result
+end
+
+
+-- Function for getting Tarantool version in storage
+
+local function get_versions(self)
+    log.info('start getting version list')
+    
+    -- Start box-net-box connection for using storage
+    local conn = conn    
+    if not conn:ping() then
+        log.info('Remote storage not available or not started')
+    end
+
+    -- Get all versions from versions table 
+    local versions  = conn.space.versions:select({iterator = ALL})
+    local data = {}
+    
+    -- Create data information for client
+    for _,v in ipairs(versions) do
+        print (v[2])
+        table.insert(data, v[2])
+    end
+    
+    data = json.encode(data)
+    print(data)
+    return self:render({ text = data })
+end
+
 -- Handler for request
 
-local function handler(self)
--- Start box-net-box connection for using storage
+local function start_handler(self)
+    
+    -- Start box-net-box connection for using storage
     local conn = conn    
     if not conn:ping() then
         log.info('Remote storage not available or not started')
@@ -62,20 +102,41 @@ local function handler(self)
         st[metric_id] = {name = tuple[2], data = {}}
     end
     
+    -- Check parameters from client (first and last version)
     -- Get data from storage versions table
-    sel = conn.space.versions:select({iterator = ALL})
+    local fv = self.req:param('firstVersion')
+    local lv = self.req:param('lastVersion')
+    
+
+    if not fv then
+        fv = conn.space.versions.index.primary:max()[1]
+        lv = fv
+    else
+        fv = int_v(fv)
+        lv = int_v(lv)
+        if fv > lv then fv, lv = lv, fv end
+    end 
+    print('fv ',fv, 'lv ', lv)
    
-    local i = sel[1][2]
+     
+    local i = fv
     log.info('Get data from version table. First version %s', i) 
+    
+    sel = conn.space.versions:select({fv}, {iterator = 'GE'})
     
     -- Iteration for all version in version table
     for _,version in ipairs(sel) do
+
+        --Check version interval 
+        if version[1] > lv then break end 
+
         -- Insert version in categories table
         table.insert(dt.categories, version[2])
         log.debug('Add %s version in categories', version[2])
 
         -- Iteration on the metric
         for metric_id, series in pairs(st) do
+
             local res = conn.space.results:select({version[1], metric_id})
             log.debug('Get result', res[1])
             if res[1] then 
@@ -103,6 +164,7 @@ local function handler(self)
     return self:render({ text = dt })
 end
 
+
 -- Start tarantool server
 
 local function start(web_host, web_port, storage_host, storage_port)
@@ -120,7 +182,9 @@ local function start(web_host, web_port, storage_host, storage_port)
     log.info('Started http server at host = %s and port = %s ', web_host, web_port)
 
     httpd:route({ path = '', file = '/index.html'})
-    httpd:route({ path = '/bench'}, handler)
+    httpd:route({ path = '/bench'}, start_handler)
+    httpd:route({ path = '/versionList'}, get_versions)
+    
     httpd:start()
 end
 
