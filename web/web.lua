@@ -50,12 +50,11 @@ local function get_versions(self)
     
     -- Create data information for client
     for _,v in ipairs(versions) do
-        print (v[2])
         table.insert(data, v[2])
     end
     
     data = json.encode(data)
-    print(data)
+    log.debug(data)
     return self:render({ text = data })
 end
 
@@ -116,8 +115,6 @@ local function start_handler(self)
         lv = int_v(lv)
         if fv > lv then fv, lv = lv, fv end
     end 
-    print('fv ',fv, 'lv ', lv)
-   
      
     local i = fv
     log.info('Get data from version table. First version %s', i) 
@@ -159,7 +156,8 @@ local function start_handler(self)
     end 
 
     dt = json.encode(dt)
-    print(dt)
+
+    log.debug(dt)
 
     return self:render({ text = dt })
 end
