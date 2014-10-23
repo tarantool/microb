@@ -6,7 +6,7 @@ local json = require('json')
 local server = require('http.server')
 local remote = require('net.box')
 
-local APP_DIR = '.'
+local APP_DIR = './microb'
 
 local conn = nil
 
