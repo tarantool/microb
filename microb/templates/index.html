@@ -1,73 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  
   <head>
-    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
-    <script src="http://code.highcharts.com/highcharts.js"></script>
-  </head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="http://tarantool.org/theme/favicon.ico">
+    <title>Microbench web UI</title>
+    <link href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+         	body {
+		  padding-top: 50px;
+		}
+		.starter-template {
+		  padding: 40px 15px;
+                  margin-bottom: 50px;
+		}
+                .error label{
+                  color: red;
+                }
+                .load_btn{
+                   margin-top: 24px;
+                }
+    </style>
+</head>
+  
   <body>
-    <h2> Tarantool benchmarking </h2>
-    <h4>Please, select tarantool versions interval</h4>
-    
-    <select id="firstVersionId" name="firstVersion">
-      <option></option>
-    </select>
-    <select id="lastVersionId" name="lastVesrion">
-      <option></option>
-    </select>
+    <div class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="http://tarantool.org"><img width="20px" height="20px" src="http://tarantool.org/theme/favicon.ico">Tarantool</a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active">
+              <a href="/">Bench</a>
+            </li>
+            <li>
+              <a href="/bench">JSON</a>
+            </li>
+            <li>
+              <a href="http://build.tarantool.org">Build farm</a>
+            </li>
+          </ul>
+        </div>
+        <!--/.nav-collapse -->
+      </div>
+    </div>
+    <div class="container">
+      <div class="starter-template">
+        <h1>
+          Tarantool microbench summary
+        </h1>
+        <div class="form-group col-xs-6" style="width: 40%;padding-left: 5px">
+          <label>Start Version:</label>
+          <select class="form-control" id="firstVersionId">
+            <option></option>
+          </select>
+        </div>
+        <div class="form-group col-xs-6" style="width: 40%;">
+          <label>End Version:</label>
+          <select class="form-control" id="lastVersionId">
+            <option></option>
+          </select>
+        </div>
+        <div class="form-group col-xs-1">
+          <button id="reloadId" type="submit" class="btn btn-success load_btn">Load</button>
+        </div>
+      </div>
+      <div id="container" style="width:100%; height:600px;"></div>
+    </div>
+    <!-- /.container -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
     <script>
-      var firstVersion = document.getElementById("firstVersionId");
-      var lastVersion = document.getElementById("lastVersionId");
-      $.get("/versionList",{},
-        function(data) {
+      function get_req(firstVersion, lastVersion) {
+        $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion }, function(data) {
+            var charts = JSON.parse(data);
+            var series = [];
+            $.map(charts.series, function(item, i){
+              $("#container").append('<div id="chart' + i.toString() +'"></div>');
+              var total_chart = [];
+              $.map(item.data, function(subdata, j){
+                total_chart.push([charts.categories[j], subdata]);
+              });
+              series.push({name: item.name, data: total_chart});
+          });
+          $('#container').highcharts({
+	  	chart: {
+			type: 'spline',
+		},
+		title: {
+			text: 'Benchmarks'
+		},
+		xAxis: {
+			labels: {
+			formatter: function(){
+					return charts.categories[this.value];
+				}
+			}
+		},
+		yAxis: {
+			title: {
+				text: 'rps'
+			}
+		},
+		series: series
+          });
+        });
+      }
+      $(document).ready(function($) {
+        get_req();
+        var firstVersion = document.getElementById("firstVersionId");
+        var lastVersion = document.getElementById("lastVersionId");
+
+        $(document).on('click', '#reloadId', function(){
+          $('.form-group').removeClass('error')
+	  if ( firstVersion.selectedIndex == 0 || lastVersion.selectedIndex == 0 ) {
+            //alert('You should choose versions interval');
+            $('.form-group').addClass('error');
+            return;
+          } 
+          get_req(
+            firstVersion.options[firstVersion.selectedIndex].value,
+            lastVersion.options[lastVersion.selectedIndex].value
+          );
+	});
+	$.get("/versionList",function(data) {
           var dt = JSON.parse(data);
           for (var i = 0; i < dt.length; i++) {
               firstVersion.options[firstVersion.options.length] = new Option(dt[i], dt[i]);
               lastVersion.options[lastVersion.options.length] = new Option(dt[i], dt[i]);
           }
         });
-    </script>
-    <input id="reloadId" type="submit" name="reload" value="reload">
-    <div id="container" style="width:80%; height:600px;"></div>
-    <script>
-      function get_req(firstVersion, lastVersion) {
-        $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion },
-          function(data) {
-            var dt = JSON.parse(data);
-            $("#container").highcharts({
-              chart: {
-                type: 'column',
-            },
-            title: {
-                text:'Benchmark results' 
-            },
-            xAxis: {
-                categories: dt.categories
-            },
-            yAxis: {
-                title: {
-                    text: 'rps'
-                }
-            },
-            series: dt.series,
-            });
-          });
-      };
-      jQuery(document).ready(function($) {
-        get_req();
-        var elem = document.getElementById("reloadId");
-        var firstVersion = document.getElementById("firstVersionId");
-        var lastVersion = document.getElementById("lastVersionId");
-        elem.onclick = function() {
-          //alert(firstVersion.options[firstVersion.selectedIndex].value)
-          if ( firstVersion.selectedIndex == 0 || lastVersion.selectedIndex == 0 ) {
-            alert('You should choose versions interval');
-            return;
-          } 
-          get_req(firstVersion.options[firstVersion.selectedIndex].value,
-            lastVersion.options[lastVersion.selectedIndex].value);
-        }
       });
     </script>
+
+
   </body>
+
 </html>
 
