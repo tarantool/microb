@@ -5,21 +5,21 @@ Microbenchmarking for Tarantool. More details in [wiki](https://github.com/taran
 
 Install
 -------
-1. [install tarantool](http://tarantool.org/download.html)
-2. [install luarocks](http://rocks.tarantool.org/)
-3. create rpm
+* [install tarantool](http://tarantool.org/download.html)
+* [install luarocks](http://rocks.tarantool.org/)
+* create rpm
 ```bash
 $make
 ```
-4. install package
+* install package
 ```bash
 $sudo yum localinstall tarantool-microb-module-x.y-z.noarch.rpm
 ```
-5. enable installed modules in tarantool
+* enable installed modules in tarantool
 ```bash
 $sudo cp /etc/tarantool/instances.available/*.lua  /etc/tarantool/instances.enabled/
 ```
-6. Start microb storage and web ui
+* Start microb storage and web ui
 ```bash
 $sudo tarantoolctl start microb_storage
 $sudo tarantoolctl start microb_web
