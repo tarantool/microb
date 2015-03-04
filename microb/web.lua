@@ -103,9 +103,8 @@ local function start_handler(self)
     
     -- Check parameters from client (first and last version)
     -- Get data from storage versions table
-    local fv = self.req:param('firstVersion')
-    local lv = self.req:param('lastVersion')
-    
+    local fv = self:query_param('firstVersion')
+    local lv = self:query_param('lastVersion')    
 
     if not fv then
         fv = conn.space.versions.index.primary:max()[1]
