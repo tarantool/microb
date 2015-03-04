@@ -84,7 +84,6 @@
             var charts = JSON.parse(data);
             var series = [];
             $.map(charts.series, function(item, i){
-              $("#container").append('<div id="chart' + i.toString() +'"></div>');
               var total_chart = [];
               $.map(item.data, function(subdata, j){
                 total_chart.push([charts.categories[j], subdata]);
