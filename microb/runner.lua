@@ -3,7 +3,7 @@
 local yaml = require('yaml')
 local log = require('log')
 local remote = require('net.box')
-
+local ITER_COUNT = 20
 local MODULE = 'microb.benchmarks.'
 
 local list = require('microb.cfg').list -- Listing benchmark files
@@ -21,6 +21,43 @@ local function int_v(version)
     return result
 end
 
+local function cleanup_sophia(results)
+    for _, result in pairs(results) do
+        if result.engine == 'sophia' then
+            os.execute('rm -rf ' .. tostring(result.space_id))
+        end
+    end
+end
+
+local function median(values_list)
+    table.sort(values_list)
+    local len = #values_list
+    if not math.fmod(len, 2) then
+        return math.ceil((values_list[len/2] + values_list[len/2 + 1]) / 2)
+    end
+    return values_list[math.ceil(len/2)]
+end
+
+local function bench_avg(iterations)
+    local map = {}
+    -- Fill bench results
+    for _, bench in pairs(iterations) do
+        for _, result in pairs(bench) do
+            if not map[result.key] then
+                map[result.key] = {}
+            end
+            table.insert(map[result.key], result.time_diff)
+        end
+    end
+
+    -- Use median average
+    local res = iterations[1]
+    for _, total in pairs(res) do
+        total.time_diff = median(map[total.key])
+    end
+    return res
+end
+
 
 -- Function for run some benchmark
 
@@ -34,25 +71,32 @@ local function run_bench(bench_name)
         os.exit()
     ]]
     f:write(script)
-    
-    -- Start script
-    local res = {}
 
-    local fb = io.popen('tarantool < '..fname, 'r')
-    res = yaml.decode(fb:read('*a'))
-    fb:close()
-
+    local results = {}
+    for i=1,ITER_COUNT do
+        log.info('Iteration #' .. tostring(i))
+        -- Start script
+        local iteration = {}
+        local fb = io.popen('tarantool < '..fname, 'r')
+        iteration = yaml.decode(fb:read('*a'))
+        results[i] = iteration
+        fb:close()
+        cleanup_sophia(iteration)
+        log.info('----------------------------------')
+    end
     f:close()
     os.remove(fname)
 
+    -- Average results
+    local res = bench_avg(results)
     if not res then 
         error ('There are not output results for '..bench_name..' benchmark')
     end
 
-    log.info('Have %s benchmark result', bench_name)
+    log.info('Have %s result median values', bench_name)
     
     for x, y in pairs(res) do
-        print(x, y)
+        log.info(yaml.encode(y))
     end
     for k,v in pairs(res) do
         table.insert(result, v)

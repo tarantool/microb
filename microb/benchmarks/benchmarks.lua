@@ -60,7 +60,12 @@ local function bench(s, fun, name, description)
     log.info ('Start %s benchmarks', name)
     local time_diff = time.diff(do_bench, COUNT, fun, s, N)
     local version = box.info.version
-    local res = {key = name, description = description, version = version, unit = 'units/milisec', size = COUNT, time_diff = time_diff}
+    local res = {
+        key = name, description = description, 
+        version = version, unit = 'units/milisec', 
+        size = COUNT, time_diff = time_diff,
+        space_id=s.id, engine=s.engine
+    }
     --[[for k,v in pairs(res) do
         log.info('%s, %s', k,v)
     end]]--
