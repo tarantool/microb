@@ -27,6 +27,9 @@
                 .glyphicon-arrow-down{
                    color: red;
                 }
+                #tabs{
+                   padding-left: 20px;
+                }
     </style>
 </head>
   
@@ -78,7 +81,8 @@
           <button id="reloadId" type="submit" class="btn btn-success load_btn">Load</button>
         </div>
       </div>
-      <div id="container" style="width:100%; height:600px;"></div>
+      <div id='tabs' class="btn-group" role="group" aria-label="..."></div>
+      <div id="container" class='chart-box' style="width:100%;"></div>
       <div class="container">
         <h2>The difference between first and last build</h2>            
         <table class="table">
@@ -114,17 +118,36 @@
 
       function get_req(firstVersion, lastVersion) {
         $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion }, function(data) {
-            var charts = JSON.parse(data);
-            var series = [];
+          var charts = JSON.parse(data);
+          var tabs = ['main', 'sophia'];
+          var tab_series = {};
+          $.map(tabs, function(item){
+              tab_series[item] = [];
+          });
+          var series = [];
             $.map(charts.series, function(item, i){
               var total_chart = [];
               $.map(item.data, function(subdata, j){
                 total_chart.push([charts.categories[j], subdata]);
               });
-              series.push({name: item.name, data: total_chart});
+              var splitted = item.name.split('#');
+              var tab_name;
+              var name;
+              if(splitted.length > 1){
+                  tab_name = splitted[splitted.length - 1];
+                  name = splitted.slice(0, splitted.length - 1).join('.');
+              }
+              else{
+                  tab_name = 'main';
+                  name = item.name;
+              }
+              var result = {name: name, data: total_chart};
+              tab_series[tab_name].push(result);
+              series.push(result)
           });
 
           $('#diff').html('');
+          $('#tabs').html('');
           $.map(series, function(item){
               var html = '<tr>';
               var first_val = Math.round(item.data[0][1]);
@@ -144,27 +167,32 @@
               html += '<td>' + last_val.toString() + '</td><tr>';
               $('#diff').append(html);
           });
-
-          $('#container').highcharts({
-	  	chart: {
-			type: 'spline',
-		},
-		title: {
-			text: 'Benchmarks'
-		},
-		xAxis: {
-			labels: {
-			formatter: function(){
-					return charts.categories[this.value];
-				}
-			}
-		},
-		yAxis: {
-			title: {
-				text: 'rps'
-			}
-		},
-		series: series
+          $('#tabs').append('<button type="button" class="btn btn-default tab_all">all</button>')
+          $.map(tabs, function(item){
+            $('.chart-box').append('<div class="chart-tab" id="' + item + '"></div');
+            $('#tabs').append('<button id="tab-'+ item +'"type="button" class="btn btn-default tab_switch">'+ item +'</button>')
+            $('#' + item).highcharts({
+               chart: {
+                 type: 'spline',
+                 height: 600,
+               },
+               title: {
+                 text: item
+               },
+               xAxis: {
+                 labels: {
+                   formatter: function(){
+                     return charts.categories[this.value];
+                   }
+                 }
+               },
+               yAxis: {
+                 title: {
+                   text: 'rps'
+                 }
+               },
+               series: tab_series[item]
+            });
           });
         });
       }
@@ -174,6 +202,14 @@
         var firstVersion = document.getElementById("firstVersionId");
         var lastVersion = document.getElementById("lastVersionId");
         var cur_url = window.location.protocol + "//" + window.location.host + window.location.pathname;
+
+        $(document).on("click", ".tab_switch", function(){
+            $('.chart-tab').hide();
+            $('#' + $(this).text()).show();
+        });
+        $(document).on("click", ".tab_all", function(){
+            $('.chart-tab').show();
+        });
 
         $(document).on('click', '#reloadId', function(){
           $('.form-group').removeClass('error')
