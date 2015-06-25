@@ -55,7 +55,7 @@ end
 
 -- Function for start function benchmark with diffrent options
 
-local function bench(s, fun, name, description)
+local function bench(s, fun, name, description, tab)
     math.randomseed(0)
     log.info ('Start %s benchmarks', name)
     local time_diff = time.diff(do_bench, COUNT, fun, s, N)
@@ -64,7 +64,7 @@ local function bench(s, fun, name, description)
         key = name, description = description, 
         version = version, unit = 'units/milisec', 
         size = COUNT, time_diff = time_diff,
-        space_id=s.id, engine=s.engine
+        space_id=s.id, engine=s.engine, tab = tab
     }
     --[[for k,v in pairs(res) do
         log.info('%s, %s', k,v)
@@ -86,11 +86,13 @@ local function start_bench(index, sophia)
     for k,fname in pairs(list) do
         local description = fname[1]..' benchmark with '..index..' index'
         local name = fname[1]..'.'..index
+        local tab = 'main'
         if sophia then
             name = name..'.sophia'
             description = 'Sophia, '..description
+            tab = 'sophia'
         end 
-        bench(s, fname[2], name, description)
+        bench(s, fname[2], name, description, tab)
     end
     s:drop()
 end

@@ -126,12 +126,16 @@ local function start(storage_host, storage_port)
         run_bench(b)
         
         for k,res in pairs(result) do
-            local header = conn.space.headers.index.secondary:select({res.key})[1]
+            local name = res.key
+            if res.tab ~= nil then
+                name = name .. '#' .. res.tab
+            end
+            local header = conn.space.headers.index.secondary:select({name})[1]
             -- Add metric in storage 
             if not header then
                 log.info('The %s metric is not in the headers table', res.key)
                 -- Add tuple with metric in headers space
-                header = conn:call('box.space.headers:auto_increment',{res.key ,res.description, res.unit})[1]
+                header = conn:call('box.space.headers:auto_increment',{name ,res.description, res.unit})[1]
                 log.info('The %s metric added in headers space with metric_id = %d', res.key, header[1])
             end
             local int_version = int_v(res.version)
