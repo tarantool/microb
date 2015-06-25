@@ -143,11 +143,11 @@
               }
               var result = {name: name, data: total_chart};
               tab_series[tab_name].push(result);
-              series.push(result)
+              series.push(result);
           });
-
           $('#diff').html('');
           $('#tabs').html('');
+          $('.chart-tab').show();
           $.map(series, function(item){
               var html = '<tr>';
               var first_val = Math.round(item.data[0][1]);
