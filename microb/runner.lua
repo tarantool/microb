@@ -151,5 +151,6 @@ local function start(storage_host, storage_port)
 end
 
 return {
-start = start
+start = start,
+int_v = int_v
 } 

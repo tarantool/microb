@@ -5,9 +5,10 @@ local log = require('log')
 local json = require('json')
 local server = require('http.server')
 local remote = require('net.box')
+local runner = require('microb.runner')
 
 local APP_DIR = './microb'
-
+local AUTH_TOKEN
 local conn = nil
 
 -- Function for box-net-box connect/reconnect
@@ -138,8 +139,17 @@ local function start_handler(self)
             if res[1] then 
                 -- Calculate benchmark result
                 local req = res[1][3]
-                local time = res[1][4] -- in milisec
-                local result_data = (req/time)*1000
+                local val = res[1][4]
+                local result_data
+                -- check microbench format and common format
+                -- common format: [int_version, metric_id, -1, value]
+                -- microb format: [int_version, metric_id, count, time]
+                if req > 0 then
+                    -- in milisec
+                    result_data = (req/val)*1000
+                else
+                    result_data = val
+                end
                 table.insert(series.data, result_data)
             else
                 table.insert(series.data, 0) 
@@ -161,14 +171,55 @@ local function start_handler(self)
     return self:render({ text = dt })
 end
 
+local function push(bench_id, value, version, unit, tab)
+    local conn = conn
+    if not conn:ping() then
+        log.info('Remote storage not available or not started')
+    end
+    local name = bench_id..'#'..tab
+    local header = conn.space.headers.index.secondary:select({name})[1]
+ 
+    -- Add metric in storage 
+    if not header then
+        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})[1]
+    end
+    local int_version = runner.int_v(version)
+    conn.space.versions:replace{int_version, version}
+    metric_id = header[1]
+    -- Add result in common format
+    conn.space.results:replace{int_version, metric_id, -1, tonumber(value)}
+end
+
+local function insert(self)
+    local key = self:query_param('key')
+    local bench_id = self:query_param('name')
+    local val = self:query_param('param')
+    local version = self:query_param('v')
+    local unit = self:query_param('unit')
+    local tab = self:query_param('tab')
+
+    if not key or not bench_id or not val or not version or not unit then
+        return self:render({text='{"error": "wrong params"}'})
+    end
+
+    -- check auth token
+    if key ~= AUTH_TOKEN then
+        return self:render({text='{"error":"invalid auth token"}'})
+    end
+
+    -- call insert for params
+    push(bench_id, val, version, unit, tab)
+    return self:render({text='{"status": "OK"}'})
+end
 
 -- Start tarantool server
 
-local function start(web_host, web_port, storage_host, storage_port)
+local function start(web_host, web_port, storage_host, storage_port, auth_token)
     if web_host == nil or web_port == nil then
         error('Usage: start(host, port)')
     end
     httpd = server.new(web_host, web_port, {app_dir = APP_DIR})
+    AUTH_TOKEN = auth_token
     
     if not httpd then
         error('Tarantool https server not start, have a problem')
@@ -181,6 +232,7 @@ local function start(web_host, web_port, storage_host, storage_port)
     httpd:route({ path = '', file = '/index.html'})
     httpd:route({ path = '/bench'}, start_handler)
     httpd:route({ path = '/versionList'}, get_versions)
+    httpd:route({ path = '/push'}, insert)
     
     httpd:start()
 end
