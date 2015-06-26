@@ -70,6 +70,9 @@ server {
         }
 }
 ```
-
+It's possible to save benchmarks in microb_storage using restful api. Example:
+```
+http://myserver.com/push?key=[API_KEY]&name=[METRIC_NAME]&param=[METRIC_VALUE]&v=[TARANTOOL_VERSION]&unit=[MEASUREMENT]&tab=[METRIC_GROUP]
+```
 
 
