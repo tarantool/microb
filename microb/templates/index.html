@@ -119,7 +119,7 @@
       function get_req(firstVersion, lastVersion) {
         $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion }, function(data) {
           var charts = JSON.parse(data);
-          var tabs = ['main', 'sophia'];
+          var tabs = ['main', 'sophia', 'nosqlbench.hash', 'nosqlbench.tree'];
           var tab_series = {};
           $.map(tabs, function(item){
               tab_series[item] = [];
@@ -171,7 +171,7 @@
           $.map(tabs, function(item){
             $('.chart-box').append('<div class="chart-tab" id="' + item + '"></div');
             $('#tabs').append('<button id="tab-'+ item +'"type="button" class="btn btn-default tab_switch">'+ item +'</button>')
-            $('#' + item).highcharts({
+            $('#' + item.replace('.', '\\\\.')).highcharts({
                chart: {
                  type: 'spline',
                  height: 600,
@@ -205,7 +205,7 @@
 
         $(document).on("click", ".tab_switch", function(){
             $('.chart-tab').hide();
-            $('#' + $(this).text()).show();
+            $('#' + $(this).text().replace('.', '\\\\.')).show();
         });
         $(document).on("click", ".tab_all", function(){
             $('.chart-tab').show();
