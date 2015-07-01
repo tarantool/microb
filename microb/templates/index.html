@@ -119,7 +119,7 @@
       function get_req(firstVersion, lastVersion) {
         $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion }, function(data) {
           var charts = JSON.parse(data);
-          var tabs = ['main', 'sophia', 'nosqlbench.hash', 'nosqlbench.tree'];
+          var tabs = ['main', 'sophia', 'nosqlbench.hash', 'nosqlbench.tree', 'bank'];
           var tab_series = {};
           $.map(tabs, function(item){
               tab_series[item] = [];
