@@ -2,5 +2,5 @@
 
 return {
     count = 5000,
-    list = {'benchmarks'}
+    list = {'benchmarks', 'string'}
 }

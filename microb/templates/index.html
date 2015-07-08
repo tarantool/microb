@@ -116,10 +116,30 @@
         return vars;
       }
 
+      function get_tab_names(charts){
+          var tabs = [];
+          $.map(charts.series, function(item){
+              var sp = item.name.split('#');
+
+              var tab_name;
+              if(sp.length > 1 ){
+                  tab_name = sp[sp.length - 1];
+              }
+              else{
+                  tab_name = 'main';
+              }
+              if(tabs.indexOf(tab_name) < 0){
+                  tabs.push(tab_name);
+              }
+          });
+          return tabs;
+      }
+
       function get_req(firstVersion, lastVersion) {
         $.get("/bench",{firstVersion: firstVersion, lastVersion: lastVersion }, function(data) {
           var charts = JSON.parse(data);
-          var tabs = ['main', 'sophia', 'nosqlbench.hash', 'nosqlbench.tree', 'bank'];
+          var tabs = get_tab_names(charts);
+
           var tab_series = {};
           $.map(tabs, function(item){
               tab_series[item] = [];
