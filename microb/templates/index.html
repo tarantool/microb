@@ -30,6 +30,11 @@
                 #tabs{
                    padding-left: 20px;
                 }
+                .git-helper{
+                   border: solid 1px #ccc;
+                   border-radius: 3px;
+                   display: none;
+                }
     </style>
 </head>
   
@@ -79,6 +84,7 @@
         </div>
       </div>
       <div id='tabs' class="btn-group" role="group" aria-label="..."></div>
+      <div class='container pull-right git-helper'><small>Review this version with: </small><b>git checkout <small id='git-command'></small></b></div>
       <div id="container" class='chart-box' style="width:100%;"></div>
       <div class="container">
         <h2>The difference between first and last build</h2>            
@@ -189,6 +195,20 @@
             $('.chart-box').append('<div class="chart-tab" id="' + item + '"></div');
             $('#tabs').append('<button id="tab-'+ item +'"type="button" class="btn btn-default tab_switch">'+ item +'</button>')
             $('#' + item.replace('.', '\\\\.')).highcharts({
+               plotOptions: {
+                   series: {
+                       cursor: 'pointer',
+                           point: {
+                           events: {
+                               click: function () { /* mouseOver/click */
+                                   var describe = $(this.options)[0].name;
+                                   $('#git-command').text(describe);
+                                   $('.git-helper').show();
+                               }
+                           }
+                       }
+	           }
+	       },
                chart: {
                  type: 'spline',
                  height: 600,
