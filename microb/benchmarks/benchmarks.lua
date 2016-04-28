@@ -77,7 +77,7 @@ end
 local function start_bench(index, sophia)
     local s = nil
     if sophia then 
-        s = box.schema.create_space('glade1', {engine = 'sophia'})
+        s = box.schema.create_space('glade1', {engine = 'phia'})
     else
         s = box.schema.create_space('glade1')
     end
