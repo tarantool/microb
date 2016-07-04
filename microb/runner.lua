@@ -23,7 +23,7 @@ end
 
 local function cleanup_sophia(results)
     for _, result in pairs(results) do
-        if result.engine == 'phia' then
+        if result.engine == 'vinyl' then
             os.execute('rm -rf ' .. tostring(result.space_id))
         end
     end

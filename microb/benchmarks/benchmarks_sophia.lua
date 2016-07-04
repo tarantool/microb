@@ -70,7 +70,7 @@ end
 local function run()
     --Select index option
     for x,y in pairs(index) do
-        local s = box.schema.create_space('glade', {engine = 'phia'})
+        local s = box.schema.create_space('glade', {engine = 'vinyl'})
         s:create_index('primary', {type = y, parts = {1, 'NUM'}})
         -- Selecting benchmark funcion
         for k,v in pairs(list) do
