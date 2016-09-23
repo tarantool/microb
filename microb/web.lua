@@ -7,7 +7,8 @@ local server = require('http.server')
 local remote = require('net.box')
 local runner = require('microb.runner')
 
-local APP_DIR = './microb'
+local MODULE_DIR = debug.getinfo(1).source:match("@?(.*/)") or '.'
+local APP_DIR = MODULE_DIR
 local AUTH_TOKEN
 local conn = nil
 
