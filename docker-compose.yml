@@ -1,0 +1,38 @@
+version: '2'
+
+
+services:
+
+  storage:
+    env_file:
+      - ./secrets.env
+
+    image: tarantool/tarantool:1.7
+    environment:
+      STORAGE_PORT: "33011"
+
+    ports:
+      - "33011:33011"
+    volumes:
+      - ./start_storage.lua:/opt/tarantool/start_storage.lua
+      - ./microb:/usr/local/share/tarantool/microb
+    command: ['tarantool', '/opt/tarantool/start_storage.lua']
+
+
+  web:
+    env_file:
+      - ./secrets.env
+
+    image: tarantool/tarantool:1.7
+    environment:
+      STORAGE_HOST: "storage"
+      STORAGE_PORT: "33011"
+
+    links:
+      - storage
+    ports:
+      - "8080:22222"
+    volumes:
+      - ./start_web.lua:/opt/tarantool/start_web.lua
+      - ./microb:/usr/local/share/tarantool/microb
+    command: ['tarantool', '/opt/tarantool/start_web.lua']
