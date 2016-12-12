@@ -12,10 +12,12 @@ services:
       STORAGE_PORT: "33011"
 
     ports:
-      - "33011:33011"
+      - "127.0.0.1:33011:33011"
     volumes:
+      - /var/lib/tarantool/microb_storage/:/var/lib/tarantool/
       - ./start_storage.lua:/opt/tarantool/start_storage.lua
       - ./microb:/usr/local/share/tarantool/microb
+    restart: always
     command: ['tarantool', '/opt/tarantool/start_storage.lua']
 
 
@@ -31,8 +33,10 @@ services:
     links:
       - storage
     ports:
-      - "8080:22222"
+      - "127.0.0.1:8080:22222"
     volumes:
+      - /var/lib/tarantool/microb_web/:/var/lib/tarantool/
       - ./start_web.lua:/opt/tarantool/start_web.lua
       - ./microb:/usr/local/share/tarantool/microb
+    restart: always
     command: ['tarantool', '/opt/tarantool/start_web.lua']

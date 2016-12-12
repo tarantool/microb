@@ -45,12 +45,12 @@ local function start(host, port)
    if host == nil or port == nil then
         error('Usage: start(host, port)')
     end
-    httpd = server.new(host, port, {app_dir = APP_DIR})
-    if not httpd then
-        error('Tarantool https server not start, have a problem')
-    end
-    log.info('Started http server at host = %s and port = %s ', host, port)
-    httpd:start()
+    -- httpd = server.new(host, port, {app_dir = APP_DIR})
+    -- if not httpd then
+    --     error('Tarantool https server not start, have a problem')
+    -- end
+    -- log.info('Started http server at host = %s and port = %s ', host, port)
+    -- httpd:start()
 end
 
 return {
