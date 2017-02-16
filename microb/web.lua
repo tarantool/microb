@@ -93,6 +93,8 @@ local function start_handler(self)
     -- Check the availability of data
     if not sel[1] then
        log.info('Storage is empty')
+       dt = json.encode(dt)
+       return self:render({text=dt})
     end
  
     -- Configuration series {name = 'name' , data = {}} each metric
@@ -179,11 +181,12 @@ local function push(bench_id, value, version, unit, tab)
     end
     local name = bench_id..'#'..tab
     local header = conn.space.headers.index.secondary:select({name})[1]
- 
+
     -- Add metric in storage 
     if not header then
-        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})[1]
+        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})
     end
+
     local int_version = runner.int_v(version)
     conn.space.versions:replace{int_version, version}
     metric_id = header[1]

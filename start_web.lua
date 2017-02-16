@@ -13,5 +13,6 @@ local WEB_PORT = '22222'
 local STORAGE_HOST = os.getenv('STORAGE_HOST') or '127.0.0.1'
 local STORAGE_PORT = os.getenv('STORAGE_PORT') or '33011'
 local web = require('microb.web')
+local MICROB_TOKEN = os.getenv('MICROB_TOKEN')
 
-web.start(WEB_HOST, WEB_PORT, STORAGE_HOST, STORAGE_PORT)
+web.start(WEB_HOST, WEB_PORT, STORAGE_HOST, STORAGE_PORT, MICROB_TOKEN)
