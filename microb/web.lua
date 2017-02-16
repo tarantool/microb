@@ -93,6 +93,8 @@ local function start_handler(self)
     -- Check the availability of data
     if not sel[1] then
        log.info('Storage is empty')
+       dt = json.encode(dt)
+       return self:render({text=dt})
     end
  
     -- Configuration series {name = 'name' , data = {}} each metric
@@ -179,10 +181,13 @@ local function push(bench_id, value, version, unit, tab)
     end
     local name = bench_id..'#'..tab
     local header = conn.space.headers.index.secondary:select({name})[1]
- 
     -- Add metric in storage 
     if not header then
-        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})[1]
+        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})
+    end
+
+    if name and header then
+        log.info("get name " .. name .. " header: " .. json.encode(header)) 
     end
     local int_version = runner.int_v(version)
     conn.space.versions:replace{int_version, version}
@@ -192,6 +197,7 @@ local function push(bench_id, value, version, unit, tab)
 end
 
 local function insert(self)
+    log.info("start inserting")
     local key = self:query_param('key')
     local bench_id = self:query_param('name')
     local val = self:query_param('param')
@@ -200,14 +206,16 @@ local function insert(self)
     local tab = self:query_param('tab')
 
     if not key or not bench_id or not val or not version or not unit then
+        log.info("error: invalid params")
         return self:render({text='{"error": "wrong params"}'})
     end
 
     -- check auth token
     if key ~= AUTH_TOKEN then
+        log.info("wrong key")
         return self:render({text='{"error":"invalid auth token"}'})
     end
-
+    log.info("start pushing")
     -- call insert for params
     push(bench_id, val, version, unit, tab)
     return self:render({text='{"status": "OK"}'})
