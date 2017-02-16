@@ -203,7 +203,6 @@ local function insert(self)
     local tab = self:query_param('tab')
 
     if not key or not bench_id or not val or not version or not unit then
-        log.info("error: invalid params")
         return self:render({text='{"error": "wrong params"}'})
     end
 
@@ -211,6 +210,7 @@ local function insert(self)
     if key ~= AUTH_TOKEN then
         return self:render({text='{"error":"invalid auth token"}'})
     end
+
     -- call insert for params
     push(bench_id, val, version, unit, tab)
     return self:render({text='{"status": "OK"}'})
