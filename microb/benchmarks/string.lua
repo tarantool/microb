@@ -3,7 +3,7 @@
 -- http://tarantool.org/doc/book/app_c_lua_tutorial.html
 
 local log = require('log')
-local time = require('microb.time')
+local clock = require('clock')
 local COUNT = 1000000
 local index = {'hash', 'tree'} -- Options indexes
 local result = {}
@@ -33,7 +33,7 @@ end
 local function bench(s, name, description, tab)
     math.randomseed(0)
     log.info ('Start %s benchmarks', name)
-    local time_diff = time.diff(test, s)
+    local time_diff = 1000 * clock.bench(test, s)[1]
     local version = box.info.version
     local res = {
         key = name, description = description, 

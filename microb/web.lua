@@ -184,7 +184,7 @@ local function push(bench_id, value, version, unit, tab)
 
     -- Add metric in storage 
     if not header then
-        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})
+        header = conn:call('box.space.headers:auto_increment',{{name ,'remote bench data', unit}})
     end
 
     local int_version = runner.int_v(version)

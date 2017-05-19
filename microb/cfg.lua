@@ -1,6 +1,6 @@
 -- This module for benchmarks counts and other configuration value
 
 return {
-    count = 5000,
+    count = 100000,
     list = {'benchmarks', 'string'}
 }

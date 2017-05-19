@@ -4,7 +4,7 @@
 wal_mode = 'none'}]]--
 
 local log = require('log')
-local time = require('microb.time')
+local clock = require('clock')
 --local BENCH_NAME = 'insert-random-hash-bench'
 --local DESCRIPTION = 'Insert benchmark (hash, random)'
 local N = 2^32
@@ -56,7 +56,7 @@ end
 local function bench(s, fun, name, index)
     math.randomseed(0)
     log.info ('Start %s functions benchmark with %s index and sophia engine', name, index)
-    local time_diff = time.diff(do_bench, COUNT, fun, s, N)
+    local time_diff = 1000 * clock.bench(do_bench, COUNT, fun, s, N)[1]
     local version = box.info.version
     local res = {key = 'sophia.'..name..'.'..index, description = name..' sophia benchmark with '..index..' index', version = version, unit = 'units/milisec', size = COUNT, time_diff = time_diff}
     for k,v in pairs(res) do

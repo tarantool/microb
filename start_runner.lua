@@ -2,6 +2,8 @@
 
 box.cfg {
     log_level = 5,
+    wal_dir = 'microb/',
+    snap_dir = 'microb/'
     --logger = 'runner.log',
     --pid_file = 'runner.pid',
 }

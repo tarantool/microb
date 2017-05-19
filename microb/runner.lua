@@ -24,7 +24,7 @@ end
 local function cleanup_sophia(results)
     for _, result in pairs(results) do
         if result.engine == 'vinyl' then
-            os.execute('rm -rf ' .. tostring(result.space_id))
+            os.execute('rm -rf ' .. tostring(result.space_id) .. " *.vylog")
         end
     end
 end
@@ -64,27 +64,29 @@ end
 local function run_bench(bench_name)
     -- Make a temporary file fo start benchmark
     local fname = os.tmpname()
+    local work_dir = "/tmp/"..bench_name
+    os.execute("mkdir -p " .. work_dir)
     f = io.open(fname, 'w')
-    script = [[box.cfg{wal_mode='none'}
+    script = [[box.cfg{wal_mode='none', snap_dir="]]..work_dir..[["}
         yaml=require('yaml')
         print(yaml.encode(require(']]..MODULE..bench_name..[[').run()))
         os.exit()
     ]]
     f:write(script)
+    f:close()
 
     local results = {}
     for i=1,ITER_COUNT do
         log.info('Iteration #' .. tostring(i))
         -- Start script
         local iteration = {}
-        local fb = io.popen('tarantool < '..fname, 'r')
+        local fb = io.popen('../src/tarantool ' .. fname, 'r')
         iteration = yaml.decode(fb:read('*a'))
         results[i] = iteration
         fb:close()
         cleanup_sophia(iteration)
         log.info('----------------------------------')
     end
-    f:close()
     os.remove(fname)
 
     -- Average results
