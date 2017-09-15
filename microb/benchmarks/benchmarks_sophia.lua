@@ -11,7 +11,7 @@ local N = 2^32
 local COUNT = require('microb.init_cfg').count
 
 local index = {'tree'} -- Options indexes
-local format = {'NUM', 'STR'} -- Options keys view
+local format = {'UNSIGNED', 'STR'} -- Options keys view
 local result = {}
 
 -- Descriptions function for benchmark
@@ -71,7 +71,7 @@ local function run()
     --Select index option
     for x,y in pairs(index) do
         local s = box.schema.create_space('glade', {engine = 'vinyl'})
-        s:create_index('primary', {type = y, parts = {1, 'NUM'}})
+        s:create_index('primary', {type = y, parts = {1, 'UNSIGNED'}})
         -- Selecting benchmark funcion
         for k,v in pairs(list) do
             bench(s, v[2], v[1], y)

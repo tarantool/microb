@@ -47,7 +47,7 @@ end
 
 local function start_bench(index)
     local s = box.schema.create_space('tester')
-    s:create_index('primary', {type = index, parts = {1, 'NUM'}})
+    s:create_index('primary', {type = index, parts = {1, 'UNSIGNED'}})
     bench(s, 'string.' .. index, 'insert million strings', 'strings')
     s:drop()
 end
