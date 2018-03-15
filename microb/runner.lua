@@ -2,26 +2,11 @@
 
 local yaml = require('yaml')
 local log = require('log')
-local remote = require('net.box')
-local ITER_COUNT = 20
+local ITER_COUNT = require('microb.cfg').bench_iters -- Listing benchmark files
 local MODULE = 'microb.benchmarks.'
+local list = require('microb.cfg').benchmarks -- Listing benchmark files
 
-local list = require('microb.cfg').list -- Listing benchmark files
-local result = {} -- Table for benchmark results
-
---[[ Function for transformation version string in some integer
-Example:
-version = 1.6.3-404-g4f59a4
-int_version = 1 06 030 404 
-]]--
-
-local function int_v(version)
-    local a, b, c, d = string.match(version, '^(.-)%.(.*)%.(%d-)%-(%d*)%-')
-    local result = a * 10^8 + b * 10^6 + c * 10^4 + d
-    return result
-end
-
-local function cleanup_sophia(results)
+local function cleanup_vinyl(results)
     for _, result in pairs(results) do
         if result.engine == 'vinyl' then
             os.execute('rm -rf ' .. tostring(result.space_id))
@@ -33,9 +18,9 @@ local function median(values_list)
     table.sort(values_list)
     local len = #values_list
     if not math.fmod(len, 2) then
-        return math.ceil((values_list[len/2] + values_list[len/2 + 1]) / 2)
+        return math.ceil((values_list[len / 2] + values_list[len / 2 + 1]) / 2)
     end
-    return values_list[math.ceil(len/2)]
+    return values_list[math.ceil(len / 2)]
 end
 
 local function bench_avg(iterations)
@@ -46,111 +31,103 @@ local function bench_avg(iterations)
             if not map[result.key] then
                 map[result.key] = {}
             end
+
             table.insert(map[result.key], result.time_diff)
         end
     end
-
     -- Use median average
     local res = iterations[1]
     for _, total in pairs(res) do
         total.time_diff = median(map[total.key])
     end
+
     return res
 end
 
+local function write_bench_script_file(fname, bench, engine_name, index, wal_mode, count)
 
--- Function for run some benchmark
-
-local function run_bench(bench_name)
-    -- Make a temporary file fo start benchmark
-    local fname = os.tmpname()
-    f = io.open(fname, 'w')
-    script = [[box.cfg{wal_mode='none'}
-        yaml=require('yaml')
-        print(yaml.encode(require(']]..MODULE..bench_name..[[').run()))
-        os.exit()
-    ]]
+    local f = io.open(fname, 'w')
+    local script = [[box.cfg{wal_mode=']] .. wal_mode .. [['}
+                    yaml=require('yaml')
+                    print(yaml.encode(require(']]
+            .. MODULE .. bench .. [[').run(']]
+            .. index .. [[',']]
+            .. engine_name .. [[',]]
+            .. count .. [[,']]
+            .. wal_mode .. [[')))
+                    os.exit()
+                ]]
     f:write(script)
+    return f
+end
 
-    local results = {}
-    for i=1,ITER_COUNT do
-        log.info('Iteration #' .. tostring(i))
-        -- Start script
-        local iteration = {}
-        local fb = io.popen('tarantool < '..fname, 'r')
-        iteration = yaml.decode(fb:read('*a'))
-        results[i] = iteration
-        fb:close()
-        cleanup_sophia(iteration)
-        log.info('----------------------------------')
-    end
-    f:close()
-    os.remove(fname)
+local function start_script(fname, results, count)
+    log.info('Iteration #' .. tostring(count))
+    -- Start script
+    local fb = io.popen('tarantool < ' .. fname, 'r')
+    local iteration = yaml.decode(fb:read('*a'))
+    results[count] = iteration
 
-    -- Average results
-    local res = bench_avg(results)
-    if not res then 
-        error ('There are not output results for '..bench_name..' benchmark')
+    fb:close()
+    cleanup_vinyl(iteration)
+    log.info('----------------------------------')
+end
+
+local function report_results(res, bench)
+    if not res then
+        error('There are not output results for ' .. bench .. ' benchmark')
     end
 
-    log.info('Have %s result median values', bench_name)
-    
-    for x, y in pairs(res) do
-        log.info(yaml.encode(y))
+    log.info('Have %s result median values', bench)
+    for _, v in pairs(res) do
+        log.info('Have %s, %d result median values', v.key, v.time_diff)
     end
-    for k,v in pairs(res) do
-        table.insert(result, v)
+end
+
+local function run_bench(config)
+
+    local fname = os.tmpname()
+    local bench = config['name']
+    for _, engine_config in ipairs(config['engines']) do
+        for _, index in ipairs(engine_config['index']) do
+
+            local tmp_file = write_bench_script_file(fname,
+                bench,
+                engine_config.engine_name,
+                index,
+                engine_config.wal_mode,
+                engine_config.count)
+
+            local results = {}
+            for count = 1, ITER_COUNT do
+                start_script(fname, results, count)
+            end
+
+            -- cleanup
+            tmp_file:close()
+            os.remove(fname)
+
+            -- Average results
+            local res = bench_avg(results)
+            report_results(res, bench)
+        end
     end
 end
 
 -- Function that  starts benchmarking process
-
-local function start(storage_host, storage_port)
+local function start()
     log.info('Start Tarantool benchmarking')
-    if not list then
-    error ('Benchmarks list is empty')
-    end
 
-    -- Connection to remote storage by the use box.net.box
-    local conn = remote:new(storage_host, storage_port)
-    
-    if not conn:ping() then
-        error('Remote storage not available or not started')
+    if not list then
+        error('Benchmarks list is empty')
     end
-    
-    -- Get results for all benchmarks in list
-    for k,b in pairs(list) do
-        log.info("Start '%s' benchmark", b)
-        local metric_id = nil
-        
-        run_bench(b)
-        
-        for k,res in pairs(result) do
-            local name = res.key
-            if res.tab ~= nil then
-                name = name .. '#' .. res.tab
-            end
-            local header = conn.space.headers.index.secondary:select({name})[1]
-            -- Add metric in storage 
-            if not header then
-                log.info('The %s metric is not in the headers table', res.key)
-                -- Add tuple with metric in headers space
-                header = conn:call('box.space.headers:auto_increment',{name ,res.description, res.unit})[1]
-                log.info('The %s metric added in headers space with metric_id = %d', res.key, header[1])
-            end
-            local int_version = int_v(res.version)
-            conn.space.versions:replace{int_version, res.version}
-            log.info('The %s tarantool version in versions table', res.version)
-            metric_id = header[1]
-            conn.space.results:replace{int_version, metric_id, res.size, res.time_diff}
-            log.info('The %s metric added/updated in results spaces with metric_id = %d and tarantool version = %s', res.key, metric_id, res.version)
-        end
+    for _, config in pairs(list) do
+        log.info("Start '%s' benchmark", config['name'])
+        run_bench(config)
     end
-    
-    os.exit() 
+    os.exit()
 end
 
 return {
-start = start,
-int_v = int_v
-} 
+    start = start
+}
