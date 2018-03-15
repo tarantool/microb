@@ -2,7 +2,7 @@
 
 local yaml = require('yaml')
 local log = require('log')
-local ITER_COUNT = 15
+local ITER_COUNT = 1
 local MODULE = 'microb.benchmarks.'
 
 local list = require('microb.cfg').list -- Listing benchmark files

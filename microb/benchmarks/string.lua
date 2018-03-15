@@ -4,7 +4,7 @@
 
 local log = require('log')
 local time = require('microb.time')
-local COUNT = 1000000
+local COUNT = 1000
 local index = {'hash', 'tree'} -- Options indexes
 local result = {}
 
