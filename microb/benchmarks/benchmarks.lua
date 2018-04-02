@@ -11,7 +11,7 @@ local N = 2^32
 local COUNT = require('microb.cfg').count
 
 local index = {'hash', 'tree'} -- Options indexes
-local format = {'NUM', 'STR'} -- Options keys view
+local format = {'UNSIGNED', 'STR'} -- Options keys view
 local result = {}
 
 -- Descriptions function for benchmark
@@ -81,7 +81,7 @@ local function start_bench(index, sophia)
     else
         s = box.schema.create_space('glade1')
     end
-    s:create_index('primary', {type = index, parts = {1, 'NUM'}}) 
+    s:create_index('primary', {type = index, parts = {1, 'UNSIGNED'}}) 
     -- Selecting benchmark funcion
     for k,fname in pairs(list) do
         local description = fname[1]..' benchmark with '..index..' index'

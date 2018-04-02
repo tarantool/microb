@@ -47,7 +47,7 @@ local function get_versions(self)
     end
 
     -- Get all versions from versions table 
-    local versions  = conn.space.versions:select({iterator = ALL})
+    local versions  = conn.space.versions:select()
     local data = {}
     
     -- Create data information for client
@@ -88,7 +88,7 @@ local function start_handler(self)
     local dt = {series = {}, categories = {}} -- data table   
  
     -- Get data results from storage(headers table) and data configuration
-    local sel = conn.space.headers:select({iterator = ALL})
+    local sel = conn.space.headers:select()
     
     -- Check the availability of data
     if not sel[1] then
@@ -184,12 +184,12 @@ local function push(bench_id, value, version, unit, tab)
 
     -- Add metric in storage 
     if not header then
-        header = conn:call('box.space.headers:auto_increment',{name ,'remote bench data', unit})
+        header = conn:call('box.space.headers:auto_increment',{{name ,'remote bench data', unit}})
     end
 
     local int_version = runner.int_v(version)
     conn.space.versions:replace{int_version, version}
-    metric_id = header[1]
+    local metric_id = header[1]
     -- Add result in common format
     conn.space.results:replace{int_version, metric_id, -1, tonumber(value)}
 end
@@ -222,7 +222,7 @@ local function start(web_host, web_port, storage_host, storage_port, auth_token)
     if web_host == nil or web_port == nil then
         error('Usage: start(host, port)')
     end
-    httpd = server.new(web_host, web_port, {app_dir = APP_DIR})
+    local httpd = server.new(web_host, web_port, {app_dir = APP_DIR})
     AUTH_TOKEN = auth_token
     
     if not httpd then
