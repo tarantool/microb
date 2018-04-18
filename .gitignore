@@ -3,4 +3,7 @@
 *swo
 *.snap
 *.xlog
+*.vylog
+*.idea
+*.rocks
 sophia/

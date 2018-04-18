@@ -4,7 +4,7 @@ local ffi = require('ffi')
 
 -- Add C gettimeofday
 
-ffi.cdef[[
+ffi.cdef [[
     typedef long time_t;
     typedef struct timeval {
     time_t tv_sec;
@@ -23,7 +23,7 @@ end
 
 -- Function fot getting runtime some function
 
-local function diff (fun, ...)
+local function diff(fun, ...)
     local start_time = now()
     fun(...)
     local diff = now() - start_time
@@ -31,6 +31,6 @@ local function diff (fun, ...)
 end
 
 return {
-now = now,
-diff = diff
+    now = now,
+    diff = diff
 }

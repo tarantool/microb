@@ -3,8 +3,47 @@ microB
 
 Microbenchmarking for Tarantool. More details in [wiki](https://github.com/tarantool/microb/wiki)
 
-Install
--------
+## Benchmark ##
+### Usage ###
+```
+tarantool start_runner.lua
+```
+
+### Add a new benchmark ###
+
+* Add a new file to the benchmarks folder
+* Create a new configuration settings in [microb/cfg.lua](microb/cfg.lua) file.
+You must set `name` and `engines` parameters. 
+`name` must be equal to the filename from the first bullet.
+ 
+Minimal configuration example:
+```
+-- This module for benchmarks counts and other configuration value
+
+-- Engine configuration options
+local engine = {
+    memtx = {
+        engine_name = 'memtx',
+        index = { 'hash', 'tree' },
+        count = 500000,
+        wal_mode = 'none'
+    },
+}
+
+-- Benchmarks configuration settings (benchmarks must have the same names as in benchmarks folder)
+local crud = { name = 'crud', engines = { engine.memtx } }
+
+-- Global configuration settings
+return {
+    -- Number of iterations per benchmark
+    bench_iters = 1,
+    -- Benchmarks to run
+    benchmarks = { crud }
+}
+```
+
+## Web Storage and Site ##
+### Install ###
 * [install tarantool](http://tarantool.org/download.html)
 * [install luarocks](http://rocks.tarantool.org/)
 * create rpm
@@ -53,10 +92,7 @@ $tarantool start_web.lua
 2015-03-04 18:05:35.285 [4156] main C> entering the event loop
 ```
 
-3. Run benchmark
-```bash
-$tarantool start_runner.lua
-```
+
 
 Nginx proxy pass
 ----------------
@@ -74,5 +110,4 @@ It's possible to save benchmarks in microb_storage using restful api. Example:
 ```
 http://myserver.com/push?key=[API_KEY]&name=[METRIC_NAME]&param=[METRIC_VALUE]&v=[TARANTOOL_VERSION]&unit=[MEASUREMENT]&tab=[METRIC_GROUP]
 ```
-
 
